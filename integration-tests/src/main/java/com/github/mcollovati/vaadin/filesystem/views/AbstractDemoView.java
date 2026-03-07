@@ -86,7 +86,9 @@ abstract class AbstractDemoView extends VerticalLayout {
      * @return {@code null}
      */
     Void logError(Throwable error) {
-        appendLog("Error: " + error.getMessage());
+        Throwable cause = error instanceof java.util.concurrent.CompletionException ? error.getCause() : error;
+        String type = cause.getClass().getSimpleName();
+        appendLog(type + ": " + cause.getMessage());
         return null;
     }
 

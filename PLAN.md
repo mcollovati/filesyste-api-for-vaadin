@@ -193,14 +193,13 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 ### Step 6: Error Handling and Edge Cases
 **Goal**: Robust error handling, browser support detection, and handle lifecycle.
 
-- [ ] Custom exception hierarchy:
+- [x] Custom exception hierarchy:
   - `FileSystemApiException` (base)
   - `FileSystemApiNotSupportedException` (browser doesn't support the API)
-  - `FileSystemPermissionDeniedException` (user denied permission)
   - `FileSystemNotFoundException` (file/directory not found)
   - `FileSystemNotAllowedException` (operation not allowed / cancelled)
   - `FileSystemTypeMismatchException` (expected file but got directory, or vice versa)
-- [ ] JS-side error mapping: catch `DOMException` by name and return structured
+- [x] JS-side error mapping: catch `DOMException` by name and return structured
   error objects to the server:
   - `NotFoundError` -> `FileSystemNotFoundException`
   - `NotAllowedError` -> `FileSystemNotAllowedException`
@@ -209,7 +208,7 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - [x] Handle lifecycle management:
   - `FileSystemHandle.release()` to remove from client-side registry
   - Auto-cleanup on component detach (via detach listener in `JsBridge`)
-- [ ] Unit tests: exception mapping logic
+- [x] Unit tests: exception mapping logic
 - [ ] Integration test: verify error scenarios (access non-existent file, etc.)
 - [ ] Commit: "feat: error handling and handle lifecycle"
 
@@ -356,7 +355,6 @@ src/
       WritableOptions.java                      # Options for createWritable
       FileSystemApiException.java               # Base exception
       FileSystemApiNotSupportedException.java   # API not available in browser
-      FileSystemPermissionDeniedException.java  # Permission denied
       FileSystemNotFoundException.java          # Entry not found
       FileSystemNotAllowedException.java        # Operation not allowed / cancelled
       FileSystemTypeMismatchException.java      # Type mismatch (file vs directory)

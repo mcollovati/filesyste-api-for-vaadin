@@ -8,8 +8,10 @@ import com.vaadin.flow.shared.Registration;
 import java.io.Serializable;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import tools.jackson.core.type.TypeReference;
 
 /**
@@ -47,6 +49,30 @@ class JsBridge implements Serializable {
                 return {id: id, name: h.name, kind: h.kind};
             });""";
 
+    /**
+     * JS template that wraps an expression in a try-catch block. Catches
+     * {@code DOMException} errors and re-throws them with a structured
+     * message containing the error name, allowing server-side mapping to
+     * specific Java exception types. Use with {@link String#formatted}.
+     */
+    private static final String JS_TRY_CATCH =
+            """
+            try {
+            %s
+            } catch(__e) {
+                throw new Error((__e.name || 'Error') + ': ' + __e.message);
+            }""";
+
+    /**
+     * Maps JS DOMException names to Java exception factory methods.
+     */
+    private static final Map<String, ExceptionFactory> ERROR_MAP = Map.of(
+            "NotFoundError", FileSystemNotFoundException::new,
+            "NotAllowedError", FileSystemNotAllowedException::new,
+            "AbortError", FileSystemNotAllowedException::new,
+            "TypeMismatchError", FileSystemTypeMismatchException::new,
+            "SecurityError", FileSystemNotAllowedException::new);
+
     private final Component component;
     boolean initialized;
     private Registration detachRegistration;
@@ -77,87 +103,91 @@ class JsBridge implements Serializable {
     }
 
     CompletableFuture<Void> executeVoidJs(String expression, Object... params) {
-        return executeJs(expression, params).toCompletableFuture(String.class).thenApply(ignored -> null);
+        return mapErrors(
+                executeJs(expression, params).toCompletableFuture(String.class).thenApply(ignored -> null));
     }
 
     CompletableFuture<Boolean> isSameEntry(String handleId1, String handleId2) {
-        return executeJs(
-                        """
-                        const h1 = this.__fsApiHandles.get($0);
-                        const h2 = this.__fsApiHandles.get($1);
-                        return await h1.isSameEntry(h2);""",
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const h1 = this.__fsApiHandles.get($0);
+                                const h2 = this.__fsApiHandles.get($1);
+                                return await h1.isSameEntry(h2);"""),
                         handleId1,
                         handleId2)
-                .toCompletableFuture(Boolean.class);
+                .toCompletableFuture(Boolean.class));
     }
 
     CompletableFuture<PermissionState> queryPermission(String handleId, PermissionMode mode) {
-        return executeJs(
-                        """
-                        const h = this.__fsApiHandles.get($0);
-                        return await h.queryPermission({mode: $1});""",
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const h = this.__fsApiHandles.get($0);
+                                return await h.queryPermission({mode: $1});"""),
                         handleId,
                         mode.getJsValue())
                 .toCompletableFuture(String.class)
-                .thenApply(PermissionState::fromJsValue);
+                .thenApply(PermissionState::fromJsValue));
     }
 
     CompletableFuture<PermissionState> requestPermission(String handleId, PermissionMode mode) {
-        return executeJs(
-                        """
-                        const h = this.__fsApiHandles.get($0);
-                        return await h.requestPermission({mode: $1});""",
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const h = this.__fsApiHandles.get($0);
+                                return await h.requestPermission({mode: $1});"""),
                         handleId,
                         mode.getJsValue())
                 .toCompletableFuture(String.class)
-                .thenApply(PermissionState::fromJsValue);
+                .thenApply(PermissionState::fromJsValue));
     }
 
     CompletableFuture<List<FileSystemFileHandle>> showOpenFilePicker(OpenFilePickerOptions options) {
-        return executeJs(
-                        RESOLVE_START_IN
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(RESOLVE_START_IN
                                 + """
 
                         const handles = await window.showOpenFilePicker(opts);
                         """
-                                + REGISTER_HANDLES,
+                                + REGISTER_HANDLES),
                         options)
                 .toCompletableFuture(new TypeReference<List<HandleInfo>>() {})
                 .thenApply(infos -> infos.stream()
                         .map(info -> new FileSystemFileHandle(info.id(), info.name(), this))
-                        .toList());
+                        .toList()));
     }
 
     CompletableFuture<FileSystemFileHandle> showSaveFilePicker(SaveFilePickerOptions options) {
-        return executeJs(
-                        RESOLVE_START_IN
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(RESOLVE_START_IN
                                 + """
 
                         const handles = [await window.showSaveFilePicker(opts)];
                         """
-                                + REGISTER_HANDLES,
+                                + REGISTER_HANDLES),
                         options)
                 .toCompletableFuture(new TypeReference<List<HandleInfo>>() {})
                 .thenApply(infos -> infos.stream()
                         .map(info -> new FileSystemFileHandle(info.id(), info.name(), this))
                         .findFirst()
-                        .orElseThrow());
+                        .orElseThrow()));
     }
 
     CompletableFuture<FileSystemDirectoryHandle> showDirectoryPicker(DirectoryPickerOptions options) {
-        return executeJs(
-                        RESOLVE_START_IN
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(RESOLVE_START_IN
                                 + """
 
                         const handles = [await window.showDirectoryPicker(opts)];
                         """
-                                + REGISTER_HANDLES,
+                                + REGISTER_HANDLES),
                         options)
                 .toCompletableFuture(new TypeReference<List<HandleInfo>>() {})
                 .thenApply(infos -> infos.stream()
                         .map(info -> new FileSystemDirectoryHandle(info.id(), info.name(), this))
                         .findFirst()
-                        .orElseThrow());
+                        .orElseThrow()));
     }
 
     /**
@@ -171,68 +201,73 @@ class JsBridge implements Serializable {
             return {id: id, name: handle.name, kind: handle.kind};""";
 
     CompletableFuture<FileSystemFileHandle> getFileHandle(String dirHandleId, String name, GetHandleOptions options) {
-        return executeJs(
-                        """
-                        const dir = this.__fsApiHandles.get($0);
-                        const handle = await dir.getFileHandle($1, $2);
-                        """
-                                + REGISTER_SINGLE_HANDLE,
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const dir = this.__fsApiHandles.get($0);
+                                const handle = await dir.getFileHandle($1, $2);
+                                """
+                                        + REGISTER_SINGLE_HANDLE),
                         dirHandleId,
                         name,
                         options)
                 .toCompletableFuture(new TypeReference<HandleInfo>() {})
-                .thenApply(info -> new FileSystemFileHandle(info.id(), info.name(), this));
+                .thenApply(info -> new FileSystemFileHandle(info.id(), info.name(), this)));
     }
 
     CompletableFuture<FileSystemDirectoryHandle> getDirectoryHandle(
             String dirHandleId, String name, GetHandleOptions options) {
-        return executeJs(
-                        """
-                        const dir = this.__fsApiHandles.get($0);
-                        const handle = await dir.getDirectoryHandle($1, $2);
-                        """
-                                + REGISTER_SINGLE_HANDLE,
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const dir = this.__fsApiHandles.get($0);
+                                const handle = await dir.getDirectoryHandle($1, $2);
+                                """
+                                        + REGISTER_SINGLE_HANDLE),
                         dirHandleId,
                         name,
                         options)
                 .toCompletableFuture(new TypeReference<HandleInfo>() {})
-                .thenApply(info -> new FileSystemDirectoryHandle(info.id(), info.name(), this));
+                .thenApply(info -> new FileSystemDirectoryHandle(info.id(), info.name(), this)));
     }
 
     CompletableFuture<Void> removeEntry(String dirHandleId, String name, RemoveEntryOptions options) {
         return executeVoidJs(
-                """
-                const dir = this.__fsApiHandles.get($0);
-                await dir.removeEntry($1, $2);""",
+                JS_TRY_CATCH.formatted(
+                        """
+                        const dir = this.__fsApiHandles.get($0);
+                        await dir.removeEntry($1, $2);"""),
                 dirHandleId,
                 name,
                 options);
     }
 
     CompletableFuture<Optional<List<String>>> resolve(String dirHandleId, String childHandleId) {
-        return executeJs(
-                        """
-                        const dir = this.__fsApiHandles.get($0);
-                        const child = this.__fsApiHandles.get($1);
-                        const path = await dir.resolve(child);
-                        return path;""",
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const dir = this.__fsApiHandles.get($0);
+                                const child = this.__fsApiHandles.get($1);
+                                const path = await dir.resolve(child);
+                                return path;"""),
                         dirHandleId,
                         childHandleId)
                 .toCompletableFuture(new TypeReference<List<String>>() {})
-                .thenApply(Optional::ofNullable);
+                .thenApply(Optional::ofNullable));
     }
 
     CompletableFuture<List<FileSystemHandle>> entries(String dirHandleId) {
-        return executeJs(
-                        """
-                        const dir = this.__fsApiHandles.get($0);
-                        const result = [];
-                        for await (const [name, handle] of dir.entries()) {
-                            const id = String(this.__fsApiNextId++);
-                            this.__fsApiHandles.set(id, handle);
-                            result.push({id: id, name: handle.name, kind: handle.kind});
-                        }
-                        return result;""",
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const dir = this.__fsApiHandles.get($0);
+                                const result = [];
+                                for await (const [name, handle] of dir.entries()) {
+                                    const id = String(this.__fsApiNextId++);
+                                    this.__fsApiHandles.set(id, handle);
+                                    result.push({id: id, name: handle.name, kind: handle.kind});
+                                }
+                                return result;"""),
                         dirHandleId)
                 .toCompletableFuture(new TypeReference<List<HandleInfo>>() {})
                 .thenApply(infos -> infos.stream()
@@ -242,22 +277,23 @@ class JsBridge implements Serializable {
                             }
                             return (FileSystemHandle) new FileSystemFileHandle(info.id(), info.name(), this);
                         })
-                        .toList());
+                        .toList()));
     }
 
     CompletableFuture<FileData> getFile(String handleId) {
-        return executeJs(
-                        """
-                        const h = this.__fsApiHandles.get($0);
-                        const file = await h.getFile();
-                        const buf = await file.arrayBuffer();
-                        const bytes = new Uint8Array(buf);
-                        let binary = '';
-                        for (let i = 0; i < bytes.length; i++) {
-                            binary += String.fromCharCode(bytes[i]);
-                        }
-                        return {name: file.name, size: file.size, type: file.type,
-                            lastModified: file.lastModified, content: btoa(binary)};""",
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const h = this.__fsApiHandles.get($0);
+                                const file = await h.getFile();
+                                const buf = await file.arrayBuffer();
+                                const bytes = new Uint8Array(buf);
+                                let binary = '';
+                                for (let i = 0; i < bytes.length; i++) {
+                                    binary += String.fromCharCode(bytes[i]);
+                                }
+                                return {name: file.name, size: file.size, type: file.type,
+                                    lastModified: file.lastModified, content: btoa(binary)};"""),
                         handleId)
                 .toCompletableFuture(new TypeReference<FileInfo>() {})
                 .thenApply(info -> new FileData(
@@ -265,28 +301,30 @@ class JsBridge implements Serializable {
                         info.size(),
                         info.type(),
                         info.lastModified(),
-                        Base64.getDecoder().decode(info.content())));
+                        Base64.getDecoder().decode(info.content()))));
     }
 
     CompletableFuture<FileSystemWritableFileStream> createWritable(String handleId, WritableOptions options) {
-        return executeJs(
-                        """
-                        const h = this.__fsApiHandles.get($0);
-                        const writable = await h.createWritable($1);
-                        const id = String(this.__fsApiNextWritableId++);
-                        this.__fsApiWritables.set(id, writable);
-                        return id;""",
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                """
+                                const h = this.__fsApiHandles.get($0);
+                                const writable = await h.createWritable($1);
+                                const id = String(this.__fsApiNextWritableId++);
+                                this.__fsApiWritables.set(id, writable);
+                                return id;"""),
                         handleId,
                         options)
                 .toCompletableFuture(String.class)
-                .thenApply(streamId -> new FileSystemWritableFileStream(streamId, this));
+                .thenApply(streamId -> new FileSystemWritableFileStream(streamId, this)));
     }
 
     CompletableFuture<Void> writableWriteText(String streamId, String text) {
         return executeVoidJs(
-                """
-                const w = this.__fsApiWritables.get($0);
-                await w.write($1);""",
+                JS_TRY_CATCH.formatted(
+                        """
+                        const w = this.__fsApiWritables.get($0);
+                        await w.write($1);"""),
                 streamId,
                 text);
     }
@@ -294,42 +332,46 @@ class JsBridge implements Serializable {
     CompletableFuture<Void> writableWriteBytes(String streamId, byte[] data) {
         String base64 = Base64.getEncoder().encodeToString(data);
         return executeVoidJs(
-                """
-                const w = this.__fsApiWritables.get($0);
-                const binary = atob($1);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
-                }
-                await w.write(bytes);""",
+                JS_TRY_CATCH.formatted(
+                        """
+                        const w = this.__fsApiWritables.get($0);
+                        const binary = atob($1);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) {
+                            bytes[i] = binary.charCodeAt(i);
+                        }
+                        await w.write(bytes);"""),
                 streamId,
                 base64);
     }
 
     CompletableFuture<Void> writableSeek(String streamId, long position) {
         return executeVoidJs(
-                """
-                const w = this.__fsApiWritables.get($0);
-                await w.seek($1);""",
+                JS_TRY_CATCH.formatted(
+                        """
+                        const w = this.__fsApiWritables.get($0);
+                        await w.seek($1);"""),
                 streamId,
                 (double) position);
     }
 
     CompletableFuture<Void> writableTruncate(String streamId, long size) {
         return executeVoidJs(
-                """
-                const w = this.__fsApiWritables.get($0);
-                await w.truncate($1);""",
+                JS_TRY_CATCH.formatted(
+                        """
+                        const w = this.__fsApiWritables.get($0);
+                        await w.truncate($1);"""),
                 streamId,
                 (double) size);
     }
 
     CompletableFuture<Void> writableClose(String streamId) {
         return executeVoidJs(
-                """
-                const w = this.__fsApiWritables.get($0);
-                await w.close();
-                this.__fsApiWritables.delete($0);""",
+                JS_TRY_CATCH.formatted(
+                        """
+                        const w = this.__fsApiWritables.get($0);
+                        await w.close();
+                        this.__fsApiWritables.delete($0);"""),
                 streamId);
     }
 
@@ -382,7 +424,60 @@ class JsBridge implements Serializable {
         }
     }
 
+    /**
+     * Maps a {@link CompletableFuture} failure to the appropriate
+     * {@link FileSystemApiException} subclass based on the JS error name.
+     *
+     * @param future the future to map errors for
+     * @param <T>    the future's result type
+     * @return a new future with mapped exceptions
+     */
+    static <T> CompletableFuture<T> mapErrors(CompletableFuture<T> future) {
+        return future.exceptionallyCompose(error -> {
+            Throwable cause = error instanceof CompletionException ? error.getCause() : error;
+            FileSystemApiException mapped = mapException(cause);
+            return CompletableFuture.failedFuture(mapped);
+        });
+    }
+
+    /**
+     * Maps a throwable from a failed JS call to the appropriate
+     * {@link FileSystemApiException} subclass.
+     *
+     * @param error the original error
+     * @return the mapped exception
+     */
+    static FileSystemApiException mapException(Throwable error) {
+        String message = error.getMessage();
+        if (message != null) {
+            int colonIndex = message.indexOf(':');
+            if (colonIndex > 0) {
+                String errorName = message.substring(0, colonIndex).trim();
+                ExceptionFactory factory = ERROR_MAP.get(errorName);
+                if (factory != null) {
+                    String errorMessage = message.substring(colonIndex + 1).trim();
+                    return factory.create(errorMessage);
+                }
+            }
+        }
+        return new FileSystemApiException(message != null ? message : "Unknown File System API error", error);
+    }
+
     private Element element() {
         return component.getElement();
+    }
+
+    /**
+     * Functional interface for creating specific exception instances.
+     */
+    @FunctionalInterface
+    interface ExceptionFactory extends Serializable {
+        /**
+         * Creates an exception with the given message.
+         *
+         * @param message the error message
+         * @return the exception
+         */
+        FileSystemApiException create(String message);
     }
 }
