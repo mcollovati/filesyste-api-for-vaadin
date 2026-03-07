@@ -124,6 +124,9 @@
                 <version>${spotless.version}</version>
                 <configuration>
                     <java>
+                        <licenseHeader>
+                            <file>${maven.multiModuleProjectDirectory}/license-header.txt</file>
+                        </licenseHeader>
                         <palantirJavaFormat>
                             <version>2.50.0</version>
                         </palantirJavaFormat>

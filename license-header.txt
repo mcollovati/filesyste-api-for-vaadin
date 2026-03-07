@@ -1,5 +1,5 @@
 /*-
- * Copyright 2026 Marco Collovati
+ * Copyright $YEAR Marco Collovati
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.mcollovati.vaadin.filesystem;
-
-import org.junit.jupiter.api.Test;
-
-class OpfsErrorHandlingIT extends AbstractIT {
-
-    @Test
-    void notFoundError() {
-        navigateTo("test/opfs-errors");
-        clickButton("not-found-error");
-        waitForLog("FileSystemNotFoundException:");
-    }
-
-    @Test
-    void typeMismatchError() {
-        navigateTo("test/opfs-errors");
-        clickButton("type-mismatch-error");
-        waitForLog("FileSystemTypeMismatchException:");
-    }
-}
