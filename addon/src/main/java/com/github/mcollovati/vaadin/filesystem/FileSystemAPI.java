@@ -98,21 +98,23 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes with the list of file data
      */
     public CompletableFuture<List<FileData>> openFiles() {
-        return openFiles(OpenFilePickerOptions.builder().multiple(true).build());
+        return openFiles(OpenFilePickerOptions.builder().build());
     }
 
     /**
      * Opens a file picker with the given options and reads all selected
      * files' content.
      *
-     * <p>The options should have {@code multiple(true)} set to allow
-     * selecting more than one file.
+     * <p>{@code multiple(true)} is forced on the effective options
+     * regardless of the value in the provided options, so the picker
+     * always allows selecting more than one file.
      *
      * @param options the picker options
      * @return a future that completes with the list of file data
      */
     public CompletableFuture<List<FileData>> openFiles(OpenFilePickerOptions options) {
-        return showOpenFilePicker(options).thenCompose(handles -> {
+        OpenFilePickerOptions effective = options.rebuild().multiple(true).build();
+        return showOpenFilePicker(effective).thenCompose(handles -> {
             List<CompletableFuture<FileData>> futures =
                     handles.stream().map(FileSystemFileHandle::getFile).toList();
             return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))

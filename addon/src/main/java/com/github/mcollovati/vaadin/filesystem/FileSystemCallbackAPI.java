@@ -132,7 +132,7 @@ public final class FileSystemCallbackAPI implements Serializable {
      * @param onError   called if an error occurs, or {@code null}
      */
     public void openFiles(SerializableConsumer<List<FileData>> onSuccess, SerializableConsumer<Throwable> onError) {
-        openFiles(OpenFilePickerOptions.builder().multiple(true).build(), onSuccess, onError);
+        openFiles(OpenFilePickerOptions.builder().build(), onSuccess, onError);
     }
 
     /**

@@ -77,4 +77,44 @@ class OpenFilePickerOptionsTest {
         var options = OpenFilePickerOptions.builder().types(filter1, filter2).build();
         assertEquals(2, options.getTypes().size());
     }
+
+    @Test
+    void rebuildCopiesAllFields() {
+        var filter = new FileTypeFilter("Images", Map.of("image/*", List.of(".png")));
+        var original = OpenFilePickerOptions.builder()
+                .types(List.of(filter))
+                .excludeAcceptAllOption(true)
+                .multiple(true)
+                .startIn("documents")
+                .build();
+
+        var copy = original.rebuild().build();
+
+        assertEquals(original.getTypes(), copy.getTypes());
+        assertEquals(original.getExcludeAcceptAllOption(), copy.getExcludeAcceptAllOption());
+        assertEquals(original.getMultiple(), copy.getMultiple());
+        assertEquals(original.getStartIn(), copy.getStartIn());
+    }
+
+    @Test
+    void rebuildAllowsSelectiveOverride() {
+        var original = OpenFilePickerOptions.builder()
+                .multiple(false)
+                .startIn("documents")
+                .build();
+
+        var modified = original.rebuild().multiple(true).build();
+
+        assertTrue(modified.getMultiple());
+        assertEquals("documents", modified.getStartIn());
+    }
+
+    @Test
+    void rebuildDoesNotMutateOriginal() {
+        var original = OpenFilePickerOptions.builder().multiple(false).build();
+
+        original.rebuild().multiple(true).build();
+
+        assertFalse(original.getMultiple());
+    }
 }

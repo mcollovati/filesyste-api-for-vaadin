@@ -90,12 +90,32 @@ public final class OpenFilePickerOptions implements Serializable {
         return new Builder();
     }
 
+    /**
+     * Returns a builder initialized with the values of this instance,
+     * allowing selective overrides.
+     *
+     * @return a pre-populated builder
+     */
+    public Builder rebuild() {
+        return new Builder(this);
+    }
+
     /** Builder for {@link OpenFilePickerOptions}. */
     public static final class Builder {
 
-        private final OpenFilePickerOptions options = new OpenFilePickerOptions();
+        private final OpenFilePickerOptions options;
 
-        private Builder() {}
+        private Builder() {
+            this.options = new OpenFilePickerOptions();
+        }
+
+        private Builder(OpenFilePickerOptions source) {
+            this.options = new OpenFilePickerOptions();
+            this.options.types = source.types;
+            this.options.excludeAcceptAllOption = source.excludeAcceptAllOption;
+            this.options.multiple = source.multiple;
+            this.options.startIn = source.startIn;
+        }
 
         /**
          * Sets the file type filters.
