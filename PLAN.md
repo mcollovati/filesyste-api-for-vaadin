@@ -7,6 +7,28 @@ and traverse directory structures through the browser's native filesystem access
 
 ---
 
+## How to Resume Work
+
+To continue implementation in a new session, use one of these prompts:
+
+```
+Read PLAN.md and continue with the next step
+```
+
+```
+Read PLAN.md and implement Step N
+```
+
+The assistant will read the plan, identify the next unchecked step, present a
+detailed sub-plan for that step, and wait for your approval before writing code.
+
+## Workflow Rules
+
+- **Always ask confirmation before committing.** Show what will be committed and wait for approval.
+- **When starting a new Step**, create a dedicated detailed plan for that step, summarize what will be done, and ask for confirmation or additions before writing any code.
+
+---
+
 ## API Design Overview
 
 ### JavaScript API to Java Mapping
