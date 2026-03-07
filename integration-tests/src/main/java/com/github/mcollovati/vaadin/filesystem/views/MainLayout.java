@@ -49,19 +49,6 @@ public class MainLayout extends AppLayout {
                 "Streaming", com.github.mcollovati.vaadin.filesystem.views.callback.StreamingDemoView.class));
         nav.addItem(callback);
 
-        var full = new SideNavItem("Full API");
-        full.addItem(new SideNavItem(
-                "File Pickers", com.github.mcollovati.vaadin.filesystem.views.full.FilePickerDemoView.class));
-        full.addItem(new SideNavItem(
-                "Read File", com.github.mcollovati.vaadin.filesystem.views.full.ReadFileDemoView.class));
-        full.addItem(new SideNavItem(
-                "Write File", com.github.mcollovati.vaadin.filesystem.views.full.WriteFileDemoView.class));
-        full.addItem(new SideNavItem(
-                "Directory", com.github.mcollovati.vaadin.filesystem.views.full.DirectoryDemoView.class));
-        full.addItem(new SideNavItem(
-                "Streaming", com.github.mcollovati.vaadin.filesystem.views.full.StreamingDemoView.class));
-        nav.addItem(full);
-
         return nav;
     }
 
