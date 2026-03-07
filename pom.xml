@@ -29,6 +29,7 @@
         <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+        <jreleaser-maven-plugin.version>1.23.0</jreleaser-maven-plugin.version>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -43,6 +44,18 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+    <url>https://github.com/mcollovati/filesyste-api-for-vaadin</url>
+    <developers>
+        <developer>
+            <id>mcollovati</id>
+            <name>Marco Collovati</name>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:https://github.com/mcollovati/filesyste-api-for-vaadin.git</connection>
+        <developerConnection>scm:git:git@github.com:mcollovati/filesyste-api-for-vaadin.git</developerConnection>
+        <url>https://github.com/mcollovati/filesyste-api-for-vaadin</url>
+    </scm>
 
     <dependencyManagement>
         <dependencies>
@@ -116,6 +129,11 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.jreleaser</groupId>
+                    <artifactId>jreleaser-maven-plugin</artifactId>
+                    <version>${jreleaser-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -138,4 +156,116 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <altDeploymentRepository>local::file:./target/staging-deploy</altDeploymentRepository>
+                <jreleaser.signing.mode>MEMORY</jreleaser.signing.mode>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <attach>true</attach>
+                                    <quiet>true</quiet>
+                                    <doclint>none</doclint>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <attach>true</attach>
+                                    <forceCreation>true</forceCreation>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.jreleaser</groupId>
+                        <artifactId>jreleaser-maven-plugin</artifactId>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <jreleaser>
+                                <release>
+                                    <github>
+                                        <owner>mcollovati</owner>
+                                        <name>filesyste-api-for-vaadin</name>
+                                        <changelog>
+                                            <formatted>ALWAYS</formatted>
+                                            <preset>conventional-commits</preset>
+                                            <skipMergeCommits>true</skipMergeCommits>
+                                            <hide>
+                                                <categories>
+                                                    <category>merge</category>
+                                                    <category>tasks</category>
+                                                    <category>build</category>
+                                                </categories>
+                                                <contributors>
+                                                    <contributor>GitHub</contributor>
+                                                    <contributor>[bot]</contributor>
+                                                </contributors>
+                                            </hide>
+                                            <contributors>
+                                                <format>- {{contributorName}}</format>
+                                            </contributors>
+                                        </changelog>
+                                        <draft>false</draft>
+                                        <tagName>{{projectVersion}}</tagName>
+                                        <releaseName>Release {{tagName}}</releaseName>
+                                        <issues>
+                                            <enabled>true</enabled>
+                                            <comment>This issue has been resolved in `{{tagName}}` ([Release Notes]({{releaseNotesUrl}}))</comment>
+                                            <applyMilestone>ALWAYS</applyMilestone>
+                                            <label>
+                                                <name>released</name>
+                                                <color>#7CFC33</color>
+                                                <description>Issue has been released</description>
+                                            </label>
+                                        </issues>
+                                    </github>
+                                </release>
+                                <deploy>
+                                    <maven>
+                                        <mavenCentral>
+                                            <release>
+                                                <active>ALWAYS</active>
+                                                <url>https://central.sonatype.com/api/v1/publisher</url>
+                                                <stagingRepositories>target/staging-deploy</stagingRepositories>
+                                            </release>
+                                        </mavenCentral>
+                                    </maven>
+                                </deploy>
+                                <signing>
+                                    <active>ALWAYS</active>
+                                    <pgp>
+                                        <mode>${jreleaser.signing.mode}</mode>
+                                        <armored>true</armored>
+                                    </pgp>
+                                </signing>
+                            </jreleaser>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
