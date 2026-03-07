@@ -206,9 +206,9 @@ detailed sub-plan for that step, and wait for your approval before writing code.
   - `NotAllowedError` -> `FileSystemNotAllowedException`
   - `TypeMismatchError` -> `FileSystemTypeMismatchException`
   - `AbortError` -> `FileSystemNotAllowedException` (user cancellation)
-- [ ] Handle lifecycle management:
+- [x] Handle lifecycle management:
   - `FileSystemHandle.release()` to remove from client-side registry
-  - Auto-cleanup on UI detach (via `UI.addDetachListener`)
+  - Auto-cleanup on component detach (via detach listener in `JsBridge`)
 - [ ] Unit tests: exception mapping logic
 - [ ] Integration test: verify error scenarios (access non-existent file, etc.)
 - [ ] Commit: "feat: error handling and handle lifecycle"

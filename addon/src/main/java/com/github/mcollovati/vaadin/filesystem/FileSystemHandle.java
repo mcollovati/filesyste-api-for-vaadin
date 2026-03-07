@@ -67,6 +67,9 @@ public sealed interface FileSystemHandle extends Serializable permits AbstractFi
      *
      * <p>After calling this method, the handle should no longer be used
      * for any operations.
+     *
+     * <p>Handles are also automatically released when the component bound
+     * to the {@link FileSystemAPI} is detached from the UI.
      */
     void release();
 }

@@ -4,6 +4,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.page.PendingJavaScriptResult;
 import com.vaadin.flow.dom.Element;
+import com.vaadin.flow.shared.Registration;
 import java.io.Serializable;
 import java.util.Base64;
 import java.util.List;
@@ -42,7 +43,8 @@ class JsBridge implements Serializable {
             + "});";
 
     private final Component component;
-    private boolean initialized;
+    boolean initialized;
+    private Registration detachRegistration;
 
     private JsBridge(Component component) {
         this.component = component;
@@ -295,7 +297,32 @@ class JsBridge implements Serializable {
                             + "this.__fsApiNextId = this.__fsApiNextId || 0;"
                             + "this.__fsApiWritables = this.__fsApiWritables || new Map();"
                             + "this.__fsApiNextWritableId = this.__fsApiNextWritableId || 0;");
+            detachRegistration = component.addDetachListener(event -> cleanup());
             initialized = true;
+        }
+    }
+
+    /**
+     * Cleans up all client-side registries and resets the bridge state.
+     *
+     * <p>Closes all open writable streams (best-effort), then clears both
+     * the handle and writable stream registries on the client side. Resets
+     * the bridge so that it re-initializes on the next operation, supporting
+     * component re-attach scenarios.
+     */
+    private void cleanup() {
+        element()
+                .executeJs("if (this.__fsApiWritables) {"
+                        + "  for (const w of this.__fsApiWritables.values()) {"
+                        + "    try { w.close(); } catch(e) {}"
+                        + "  }"
+                        + "  this.__fsApiWritables.clear();"
+                        + "}"
+                        + "if (this.__fsApiHandles) { this.__fsApiHandles.clear(); }");
+        initialized = false;
+        if (detachRegistration != null) {
+            detachRegistration.remove();
+            detachRegistration = null;
         }
     }
 

@@ -17,7 +17,7 @@
     </modules>
 
     <properties>
-        <vaadin.version>25.0.6</vaadin.version>
+        <vaadin.version>25.1.0-beta1</vaadin.version>
         <junit.version>6.0.1</junit.version>
         <browserless-test.version>1.0.0-beta1</browserless-test.version>
         <playwright.version>1.50.0</playwright.version>

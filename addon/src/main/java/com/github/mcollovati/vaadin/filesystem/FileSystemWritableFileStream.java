@@ -77,6 +77,9 @@ public final class FileSystemWritableFileStream implements Serializable {
      * <p>This must be called after writing to persist changes. If
      * the stream is not closed, written data is discarded.
      *
+     * <p>Open streams are also automatically closed (best-effort) when the
+     * component bound to the {@link FileSystemAPI} is detached from the UI.
+     *
      * @return a future that completes when the stream is closed
      */
     public CompletableFuture<Void> close() {
