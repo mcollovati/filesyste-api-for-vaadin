@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Options for {@link FileSystemAPIFull#showSaveFilePicker(SaveFilePickerOptions)}.
+ * Options for {@link FileSystemAPI#saveFile(SaveFilePickerOptions, String)}.
  *
  * <p>Use the {@link #builder()} to create an instance.
  *

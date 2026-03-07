@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Options for {@link FileSystemAPIFull#showOpenFilePicker(OpenFilePickerOptions)}.
+ * Options for {@link FileSystemAPI#openFile(OpenFilePickerOptions)}.
  *
  * <p>Use the {@link #builder()} to create an instance.
  *

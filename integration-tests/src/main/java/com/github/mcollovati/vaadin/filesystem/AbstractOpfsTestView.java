@@ -27,7 +27,7 @@ abstract class AbstractOpfsTestView extends VerticalLayout {
     abstract void addActions();
 
     CompletableFuture<FileSystemDirectoryHandle> getOpfsRoot() {
-        return fs.full().getOriginPrivateDirectory();
+        return fs.getOriginPrivateDirectory();
     }
 
     CompletableFuture<Void> cleanupOpfs(FileSystemDirectoryHandle root) {

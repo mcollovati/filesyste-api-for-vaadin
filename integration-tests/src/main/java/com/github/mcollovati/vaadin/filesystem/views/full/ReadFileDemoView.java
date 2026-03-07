@@ -6,16 +6,16 @@ import com.vaadin.flow.router.Route;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Demo view showcasing file reading with the low-level API.
+ * Demo view showcasing file reading.
  */
 @Route("full/read-file")
 public class ReadFileDemoView extends AbstractDemoView {
 
     public ReadFileDemoView() {
         super(
-                "Read File (Full API)",
-                "Open a file with showOpenFilePicker(), then read its content with "
-                        + "getFile(). The file data is transferred to the server as base64 "
+                "Read File",
+                "Open a file with openFile() which picks the file and reads its content "
+                        + "in one step. The file data is transferred to the server as base64 "
                         + "and decoded into a FileData object containing name, size, MIME type, "
                         + "and byte content.");
     }
@@ -23,15 +23,12 @@ public class ReadFileDemoView extends AbstractDemoView {
     @Override
     String codeSnippet() {
         return """
-                fs.showOpenFilePicker().thenAccept(handles -> {
-                    var handle = handles.get(0);
-                    handle.getFile().thenAccept(fileData -> {
-                        String name = fileData.getName();
-                        long size = fileData.getSize();
-                        String type = fileData.getType();
-                        byte[] content = fileData.getContent();
-                        InputStream is = fileData.getContentAsInputStream();
-                    });
+                fs.openFile().thenAccept(fileData -> {
+                    String name = fileData.getName();
+                    long size = fileData.getSize();
+                    String type = fileData.getType();
+                    byte[] content = fileData.getContent();
+                    InputStream is = fileData.getContentAsInputStream();
                 });""";
     }
 
@@ -41,13 +38,7 @@ public class ReadFileDemoView extends AbstractDemoView {
     }
 
     private void onReadFile() {
-        fs().showOpenFilePicker()
-                .thenAccept(handles -> {
-                    if (handles.isEmpty()) return;
-                    var handle = handles.get(0);
-                    handle.getFile().thenAccept(this::logFileData).exceptionally(this::logError);
-                })
-                .exceptionally(this::logError);
+        fs().openFile().thenAccept(this::logFileData).exceptionally(this::logError);
     }
 
     private void logFileData(FileData fileData) {

@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>This is the Java counterpart of the browser's
  * {@code FileSystemHandle} interface. A handle is obtained through picker
- * methods on {@link FileSystemAPIFull} or through directory traversal on
+ * methods on {@link FileSystemAPI} or through directory traversal on
  * {@link FileSystemDirectoryHandle}.
  *
  * <p>This is a sealed interface with two permitted implementations:
@@ -69,7 +69,7 @@ public sealed interface FileSystemHandle extends Serializable permits AbstractFi
      * for any operations.
      *
      * <p>Handles are also automatically released when the component bound
-     * to the {@link FileSystemAPIFull} is detached from the UI.
+     * to the {@link FileSystemAPI} is detached from the UI.
      */
     void release();
 }

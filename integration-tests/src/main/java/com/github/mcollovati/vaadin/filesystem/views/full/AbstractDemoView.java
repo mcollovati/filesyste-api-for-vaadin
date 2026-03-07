@@ -1,6 +1,6 @@
 package com.github.mcollovati.vaadin.filesystem.views.full;
 
-import com.github.mcollovati.vaadin.filesystem.FileSystemAPIFull;
+import com.github.mcollovati.vaadin.filesystem.FileSystemAPI;
 import com.github.mcollovati.vaadin.filesystem.views.MainLayout;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.H2;
@@ -14,7 +14,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
  */
 abstract class AbstractDemoView extends VerticalLayout {
 
-    private final FileSystemAPIFull fs;
+    private final FileSystemAPI fs;
     private final Pre log;
 
     /**
@@ -24,7 +24,7 @@ abstract class AbstractDemoView extends VerticalLayout {
      * @param description a short description of the showcased API
      */
     AbstractDemoView(String title, String description) {
-        fs = new FileSystemAPIFull(this);
+        fs = new FileSystemAPI(this);
         log = new Pre();
         log.getStyle()
                 .set("background", "var(--lumo-contrast-5pct)")
@@ -45,11 +45,11 @@ abstract class AbstractDemoView extends VerticalLayout {
     }
 
     /**
-     * Returns the {@link FileSystemAPIFull} instance bound to this view.
+     * Returns the {@link FileSystemAPI} instance bound to this view.
      *
      * @return the file system API
      */
-    FileSystemAPIFull fs() {
+    FileSystemAPI fs() {
         return fs;
     }
 

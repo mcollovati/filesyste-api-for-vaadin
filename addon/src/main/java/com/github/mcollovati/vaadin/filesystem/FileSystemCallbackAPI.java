@@ -26,7 +26,7 @@ import java.util.logging.Logger;
  * }</pre>
  *
  * @see FileSystemAPI
- * @see FileSystemAPIFull
+ * @see FileSystemAPI
  */
 public final class FileSystemCallbackAPI implements Serializable {
 

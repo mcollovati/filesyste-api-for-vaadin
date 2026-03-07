@@ -10,16 +10,16 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Demo view showcasing streaming transfers with the low-level API.
+ * Demo view showcasing streaming transfers.
  */
 @Route("full/streaming")
 public class StreamingDemoView extends AbstractDemoView {
 
     public StreamingDemoView() {
         super(
-                "Streaming Transfers (Full API)",
-                "Upload a file to the server with uploadTo(UploadHandler), or download "
-                        + "server content into a file with downloadFrom(DownloadHandler). Both use "
+                "Streaming Transfers",
+                "Upload a file to the server with openFile(UploadHandler), or download "
+                        + "server content into a file with saveFile(DownloadHandler). Both use "
                         + "HTTP streaming instead of base64 encoding, making them efficient for "
                         + "large files.");
     }
@@ -27,20 +27,16 @@ public class StreamingDemoView extends AbstractDemoView {
     @Override
     String codeSnippet() {
         return """
-                // Upload: browser file → server via HTTP streaming
-                fs.showOpenFilePicker().thenAccept(handles -> {
-                    var handler = UploadHandler.inMemory(
-                        (metadata, bytes) -> log("Received " + bytes.length + " bytes"));
-                    handles.get(0).uploadTo(handler);
-                });
+                // Upload: browser file -> server via HTTP streaming
+                var handler = UploadHandler.inMemory(
+                    (metadata, bytes) -> log("Received " + bytes.length + " bytes"));
+                fs.openFile(handler);
 
-                // Download: server content → browser file via HTTP streaming
-                fs.showSaveFilePicker().thenAccept(handle -> {
-                    var handler = DownloadHandler.fromInputStream(event ->
-                        new DownloadResponse(inputStream, "file.txt",
-                            "text/plain", content.length));
-                    handle.downloadFrom(handler);
-                });""";
+                // Download: server content -> browser file via HTTP streaming
+                var handler = DownloadHandler.fromInputStream(event ->
+                    new DownloadResponse(inputStream, "file.txt",
+                        "text/plain", content.length));
+                fs.saveFile(handler);""";
     }
 
     @Override
@@ -51,30 +47,18 @@ public class StreamingDemoView extends AbstractDemoView {
     }
 
     private void onUpload() {
-        fs().showOpenFilePicker()
-                .thenAccept(handles -> {
-                    if (handles.isEmpty()) return;
-                    var handle = handles.get(0);
-                    var handler = UploadHandler.inMemory((metadata, bytes) -> appendLog("Uploaded: "
-                            + metadata.fileName() + " (" + bytes.length + " bytes, " + metadata.contentType() + ")"));
-                    handle.uploadTo(handler)
-                            .thenRun(() -> appendLog("Upload complete for " + handle.getName()))
-                            .exceptionally(this::logError);
-                })
-                .exceptionally(this::logError);
+        var handler = UploadHandler.inMemory((metadata, bytes) -> appendLog(
+                "Uploaded: " + metadata.fileName() + " (" + bytes.length + " bytes, " + metadata.contentType() + ")"));
+        fs().openFile(handler).thenRun(() -> appendLog("Upload complete")).exceptionally(this::logError);
     }
 
     private void onDownload() {
         byte[] content = "Hello from Vaadin DownloadHandler!\nThis content was streamed to the file."
                 .getBytes(StandardCharsets.UTF_8);
-        fs().showSaveFilePicker()
-                .thenAccept(handle -> {
-                    var handler = DownloadHandler.fromInputStream(event -> new DownloadResponse(
-                            new ByteArrayInputStream(content), handle.getName(), "text/plain", content.length));
-                    handle.downloadFrom(handler)
-                            .thenRun(() -> appendLog("Downloaded content to " + handle.getName()))
-                            .exceptionally(this::logError);
-                })
+        var handler = DownloadHandler.fromInputStream(event ->
+                new DownloadResponse(new ByteArrayInputStream(content), "hello.txt", "text/plain", content.length));
+        fs().saveFile(handler)
+                .thenRun(() -> appendLog("Downloaded content to file"))
                 .exceptionally(this::logError);
     }
 }

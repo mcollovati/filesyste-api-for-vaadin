@@ -8,11 +8,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * High-level, task-oriented API for the browser's File System API.
+ * Java API for the browser's File System API.
  *
- * <p>Provides convenient methods that combine picker dialogs with
- * follow-up operations (read, write, stream) so that common workflows
- * can be expressed in a single call.
+ * <p>Provides convenient high-level methods that combine picker dialogs
+ * with follow-up operations (read, write, stream) so that common
+ * workflows can be expressed in a single call, as well as lower-level
+ * access to the Origin Private File System (OPFS).
  *
  * <pre>{@code
  * var fs = new FileSystemAPI(myView);
@@ -25,15 +26,12 @@ import java.util.concurrent.CompletableFuture;
  * fs.saveFile("Hello, world!");
  * }</pre>
  *
- * <p>For direct access to the low-level picker methods and handle
- * operations, use {@link FileSystemAPIFull}.
- *
- * @see FileSystemAPIFull
  * @see FileSystemCallbackAPI
  */
 public final class FileSystemAPI implements Serializable {
 
-    private final FileSystemAPIFull full;
+    private final Component component;
+    private JsBridge bridge;
 
     /**
      * Creates a new instance bound to the given component.
@@ -41,16 +39,7 @@ public final class FileSystemAPI implements Serializable {
      * @param component the component to bind to, not {@code null}
      */
     public FileSystemAPI(Component component) {
-        this.full = new FileSystemAPIFull(component);
-    }
-
-    /**
-     * Returns the underlying low-level API for advanced operations.
-     *
-     * @return the full API instance
-     */
-    public FileSystemAPIFull full() {
-        return full;
+        this.component = component;
     }
 
     /**
@@ -60,7 +49,9 @@ public final class FileSystemAPI implements Serializable {
      *         API is available in the browser
      */
     public CompletableFuture<Boolean> isSupported() {
-        return full.isSupported();
+        return getBridge()
+                .executeJs("return typeof window.showOpenFilePicker === 'function';")
+                .toCompletableFuture(Boolean.class);
     }
 
     // -- Open & Read --
@@ -82,8 +73,7 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes with the file data
      */
     public CompletableFuture<FileData> openFile(OpenFilePickerOptions options) {
-        return full.showOpenFilePicker(options)
-                .thenCompose(handles -> handles.get(0).getFile());
+        return showOpenFilePicker(options).thenCompose(handles -> handles.get(0).getFile());
     }
 
     /**
@@ -107,7 +97,7 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes with the list of file data
      */
     public CompletableFuture<List<FileData>> openFiles(OpenFilePickerOptions options) {
-        return full.showOpenFilePicker(options).thenCompose(handles -> {
+        return showOpenFilePicker(options).thenCompose(handles -> {
             List<CompletableFuture<FileData>> futures =
                     handles.stream().map(FileSystemFileHandle::getFile).toList();
             return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
@@ -138,7 +128,7 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes when the write is done
      */
     public CompletableFuture<Void> saveFile(SaveFilePickerOptions options, String text) {
-        return full.showSaveFilePicker(options).thenCompose(handle -> handle.writeString(text));
+        return showSaveFilePicker(options).thenCompose(handle -> handle.writeString(text));
     }
 
     /**
@@ -161,7 +151,7 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes when the write is done
      */
     public CompletableFuture<Void> saveFile(SaveFilePickerOptions options, byte[] data) {
-        return full.showSaveFilePicker(options).thenCompose(handle -> handle.writeBytes(data));
+        return showSaveFilePicker(options).thenCompose(handle -> handle.writeBytes(data));
     }
 
     // -- Streaming transfers --
@@ -186,8 +176,7 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes when the upload is done
      */
     public CompletableFuture<Void> openFile(OpenFilePickerOptions options, UploadHandler handler) {
-        return full.showOpenFilePicker(options)
-                .thenCompose(handles -> handles.get(0).uploadTo(handler));
+        return showOpenFilePicker(options).thenCompose(handles -> handles.get(0).uploadTo(handler));
     }
 
     /**
@@ -211,7 +200,7 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes when the download is done
      */
     public CompletableFuture<Void> saveFile(SaveFilePickerOptions options, DownloadHandler handler) {
-        return full.showSaveFilePicker(options).thenCompose(handle -> handle.downloadFrom(handler));
+        return showSaveFilePicker(options).thenCompose(handle -> handle.downloadFrom(handler));
     }
 
     // -- Directory --
@@ -233,7 +222,7 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes with the directory handle
      */
     public CompletableFuture<FileSystemDirectoryHandle> openDirectory(DirectoryPickerOptions options) {
-        return full.showDirectoryPicker(options);
+        return showDirectoryPicker(options);
     }
 
     /**
@@ -254,6 +243,44 @@ public final class FileSystemAPI implements Serializable {
      * @return a future that completes with the list of handles
      */
     public CompletableFuture<List<FileSystemHandle>> listDirectory(DirectoryPickerOptions options) {
-        return full.showDirectoryPicker(options).thenCompose(FileSystemDirectoryHandle::entries);
+        return showDirectoryPicker(options).thenCompose(FileSystemDirectoryHandle::entries);
+    }
+
+    // -- OPFS --
+
+    /**
+     * Returns a handle to the origin private file system (OPFS) root
+     * directory.
+     *
+     * <p>OPFS is a sandboxed file system private to the page's origin,
+     * accessed via {@code navigator.storage.getDirectory()}. Unlike the
+     * picker methods, this does not show a dialog and does not require
+     * user interaction.
+     *
+     * @return a future that completes with the OPFS root directory handle
+     */
+    public CompletableFuture<FileSystemDirectoryHandle> getOriginPrivateDirectory() {
+        return getBridge().getOriginPrivateDirectory();
+    }
+
+    // -- Private picker methods (delegate to JsBridge) --
+
+    private CompletableFuture<List<FileSystemFileHandle>> showOpenFilePicker(OpenFilePickerOptions options) {
+        return getBridge().showOpenFilePicker(options);
+    }
+
+    private CompletableFuture<FileSystemFileHandle> showSaveFilePicker(SaveFilePickerOptions options) {
+        return getBridge().showSaveFilePicker(options);
+    }
+
+    private CompletableFuture<FileSystemDirectoryHandle> showDirectoryPicker(DirectoryPickerOptions options) {
+        return getBridge().showDirectoryPicker(options);
+    }
+
+    JsBridge getBridge() {
+        if (bridge == null) {
+            bridge = JsBridge.getForComponent(component);
+        }
+        return bridge;
     }
 }

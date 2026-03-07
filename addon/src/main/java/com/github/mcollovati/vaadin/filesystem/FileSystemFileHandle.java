@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>This is the Java counterpart of the browser's
  * {@code FileSystemFileHandle} interface. Instances are obtained through
- * picker methods on {@link FileSystemAPIFull} or through
+ * picker methods on {@link FileSystemAPI} or through
  * {@link FileSystemDirectoryHandle#getFileHandle(String, GetHandleOptions)}.
  *
  * @see FileSystemHandle

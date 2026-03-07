@@ -1,6 +1,6 @@
 package com.github.mcollovati.vaadin.filesystem.views.full;
 
-import com.github.mcollovati.vaadin.filesystem.FileSystemFileHandle;
+import com.github.mcollovati.vaadin.filesystem.FileData;
 import com.github.mcollovati.vaadin.filesystem.FileTypeFilter;
 import com.github.mcollovati.vaadin.filesystem.OpenFilePickerOptions;
 import com.vaadin.flow.component.button.Button;
@@ -11,17 +11,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Demo view showcasing the low-level file picker API.
+ * Demo view showcasing file picker operations.
  */
 @Route("full/file-pickers")
 public class FilePickerDemoView extends AbstractDemoView {
 
     public FilePickerDemoView() {
         super(
-                "File Pickers (Full API)",
-                "Open and save file picker dialogs using showOpenFilePicker() and "
-                        + "showSaveFilePicker(). Configure options like multiple selection "
-                        + "and file type filters through builder-style option classes.");
+                "File Pickers",
+                "Open file picker dialogs using openFile() and openFiles(). Configure "
+                        + "options like multiple selection and file type filters through "
+                        + "builder-style option classes.");
 
         var status = new Span("Checking...");
         fs().isSupported().thenAccept(supported -> getUI().ifPresent(ui -> ui.access(() -> {
@@ -40,22 +40,22 @@ public class FilePickerDemoView extends AbstractDemoView {
     String codeSnippet() {
         return """
                 // Single file
-                fs.showOpenFilePicker()
-                    .thenAccept(handles -> { ... });
+                fs.openFile()
+                    .thenAccept(fileData -> { ... });
 
                 // Multiple files
                 var opts = OpenFilePickerOptions.builder()
                         .multiple(true).build();
-                fs.showOpenFilePicker(opts)
-                    .thenAccept(handles -> { ... });
+                fs.openFiles(opts)
+                    .thenAccept(allFileData -> { ... });
 
                 // Filtered by type
                 var opts = OpenFilePickerOptions.builder()
                         .types(List.of(new FileTypeFilter("Images",
                             Map.of("image/*", List.of(".png", ".jpg")))))
                         .build();
-                fs.showOpenFilePicker(opts)
-                    .thenAccept(handles -> { ... });""";
+                fs.openFile(opts)
+                    .thenAccept(fileData -> { ... });""";
     }
 
     @Override
@@ -67,15 +67,17 @@ public class FilePickerDemoView extends AbstractDemoView {
     }
 
     private void onOpenFile() {
-        fs().showOpenFilePicker()
-                .thenAccept(handles -> logHandles("Open File", handles))
-                .exceptionally(this::logError);
+        fs().openFile().thenAccept(data -> logFileData("Open File", data)).exceptionally(this::logError);
     }
 
     private void onOpenMultiple() {
         var options = OpenFilePickerOptions.builder().multiple(true).build();
-        fs().showOpenFilePicker(options)
-                .thenAccept(handles -> logHandles("Open Multiple", handles))
+        fs().openFiles(options)
+                .thenAccept(allData -> {
+                    for (var data : allData) {
+                        logFileData("Open Multiple", data);
+                    }
+                })
                 .exceptionally(this::logError);
     }
 
@@ -83,16 +85,12 @@ public class FilePickerDemoView extends AbstractDemoView {
         var options = OpenFilePickerOptions.builder()
                 .types(List.of(new FileTypeFilter("Images", Map.of("image/*", List.of(".png", ".jpg", ".gif")))))
                 .build();
-        fs().showOpenFilePicker(options)
-                .thenAccept(handles -> logHandles("Open Images", handles))
+        fs().openFile(options)
+                .thenAccept(data -> logFileData("Open Images", data))
                 .exceptionally(this::logError);
     }
 
-    private void logHandles(String action, List<? extends FileSystemFileHandle> handles) {
-        var sb = new StringBuilder(action + ": ");
-        for (var handle : handles) {
-            sb.append(handle.getName()).append(" (").append(handle.getKind()).append("), ");
-        }
-        appendLog(sb.toString());
+    private void logFileData(String action, FileData data) {
+        appendLog(action + ": " + data.getName() + " (" + data.getType() + ", " + data.getSize() + " bytes)");
     }
 }

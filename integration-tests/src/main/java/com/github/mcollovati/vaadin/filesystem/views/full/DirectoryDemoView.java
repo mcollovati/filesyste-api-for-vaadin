@@ -4,19 +4,20 @@ import com.github.mcollovati.vaadin.filesystem.DirectoryPickerOptions;
 import com.github.mcollovati.vaadin.filesystem.FileSystemHandle;
 import com.github.mcollovati.vaadin.filesystem.PermissionMode;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Route;
 import java.util.List;
 
 /**
- * Demo view showcasing directory operations with the low-level API.
+ * Demo view showcasing directory operations.
  */
 @Route("full/directory")
 public class DirectoryDemoView extends AbstractDemoView {
 
     public DirectoryDemoView() {
         super(
-                "Directory Operations (Full API)",
-                "Open a directory with showDirectoryPicker() and explore its contents. "
+                "Directory Operations",
+                "Open a directory with openDirectory() and explore its contents. "
                         + "Use entries() to list files and subdirectories, getFileHandle() and "
                         + "getDirectoryHandle() to access children, resolve() to find paths, "
                         + "and removeEntry() to delete entries.");
@@ -28,7 +29,7 @@ public class DirectoryDemoView extends AbstractDemoView {
                 var opts = DirectoryPickerOptions.builder()
                         .mode(PermissionMode.READWRITE).build();
 
-                fs.showDirectoryPicker(opts).thenAccept(dir -> {
+                fs.openDirectory(opts).thenAccept(dir -> {
                     // List entries
                     dir.entries().thenAccept(entries -> {
                         for (var entry : entries) {
@@ -50,18 +51,26 @@ public class DirectoryDemoView extends AbstractDemoView {
 
     @Override
     void addActions() {
-        add(new Button("Open Directory", e -> onOpenDirectory()));
+        var openDir = new Button("Open Directory", e -> onOpenDirectory());
+        var listDir = new Button("List Directory", e -> onListDirectory());
+        add(new HorizontalLayout(openDir, listDir));
     }
 
     private void onOpenDirectory() {
         var options =
                 DirectoryPickerOptions.builder().mode(PermissionMode.READWRITE).build();
-        fs().showDirectoryPicker(options)
+        fs().openDirectory(options)
                 .thenAccept(handle -> {
                     appendLog("Open Directory: " + handle.getName() + " (" + handle.getKind() + ")");
                     handle.entries().thenAccept(this::logEntries).exceptionally(this::logError);
                 })
                 .exceptionally(this::logError);
+    }
+
+    private void onListDirectory() {
+        var options =
+                DirectoryPickerOptions.builder().mode(PermissionMode.READWRITE).build();
+        fs().listDirectory(options).thenAccept(this::logEntries).exceptionally(this::logError);
     }
 
     private void logEntries(List<FileSystemHandle> entries) {

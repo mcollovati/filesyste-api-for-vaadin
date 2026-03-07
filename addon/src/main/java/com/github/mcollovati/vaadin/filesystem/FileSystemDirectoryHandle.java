@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>This is the Java counterpart of the browser's
  * {@code FileSystemDirectoryHandle} interface. Instances are obtained
- * through {@link FileSystemAPIFull#showDirectoryPicker()} or through
+ * through {@link FileSystemAPI#openDirectory()} or through
  * {@link #getDirectoryHandle(String, GetHandleOptions)}.
  *
  * @see FileSystemHandle
