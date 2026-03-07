@@ -5,6 +5,7 @@ import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.page.PendingJavaScriptResult;
 import com.vaadin.flow.dom.Element;
 import java.io.Serializable;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import tools.jackson.core.type.TypeReference;
@@ -133,6 +134,75 @@ class JsBridge implements Serializable {
                         .orElseThrow());
     }
 
+    CompletableFuture<FileData> getFile(String handleId) {
+        return executeJs(
+                        "const h = this.__fsApiHandles.get($0);"
+                                + "const file = await h.getFile();"
+                                + "const buf = await file.arrayBuffer();"
+                                + "const bytes = new Uint8Array(buf);"
+                                + "let binary = '';"
+                                + "for (let i = 0; i < bytes.length; i++) {"
+                                + "  binary += String.fromCharCode(bytes[i]);"
+                                + "}"
+                                + "return {name: file.name, size: file.size, type: file.type,"
+                                + " lastModified: file.lastModified, content: btoa(binary)};",
+                        handleId)
+                .toCompletableFuture(new TypeReference<FileInfo>() {})
+                .thenApply(info -> new FileData(
+                        info.name(),
+                        info.size(),
+                        info.type(),
+                        info.lastModified(),
+                        Base64.getDecoder().decode(info.content())));
+    }
+
+    CompletableFuture<FileSystemWritableFileStream> createWritable(String handleId, WritableOptions options) {
+        return executeJs(
+                        "const h = this.__fsApiHandles.get($0);"
+                                + "const writable = await h.createWritable($1);"
+                                + "const id = String(this.__fsApiNextWritableId++);"
+                                + "this.__fsApiWritables.set(id, writable);"
+                                + "return id;",
+                        handleId,
+                        options)
+                .toCompletableFuture(String.class)
+                .thenApply(streamId -> new FileSystemWritableFileStream(streamId, this));
+    }
+
+    CompletableFuture<Void> writableWriteText(String streamId, String text) {
+        return executeVoidJs("const w = this.__fsApiWritables.get($0);" + "await w.write($1);", streamId, text);
+    }
+
+    CompletableFuture<Void> writableWriteBytes(String streamId, byte[] data) {
+        String base64 = Base64.getEncoder().encodeToString(data);
+        return executeVoidJs(
+                "const w = this.__fsApiWritables.get($0);"
+                        + "const binary = atob($1);"
+                        + "const bytes = new Uint8Array(binary.length);"
+                        + "for (let i = 0; i < binary.length; i++) {"
+                        + "  bytes[i] = binary.charCodeAt(i);"
+                        + "}"
+                        + "await w.write(bytes);",
+                streamId,
+                base64);
+    }
+
+    CompletableFuture<Void> writableSeek(String streamId, long position) {
+        return executeVoidJs(
+                "const w = this.__fsApiWritables.get($0);" + "await w.seek($1);", streamId, (double) position);
+    }
+
+    CompletableFuture<Void> writableTruncate(String streamId, long size) {
+        return executeVoidJs(
+                "const w = this.__fsApiWritables.get($0);" + "await w.truncate($1);", streamId, (double) size);
+    }
+
+    CompletableFuture<Void> writableClose(String streamId) {
+        return executeVoidJs(
+                "const w = this.__fsApiWritables.get($0);" + "await w.close();" + "this.__fsApiWritables.delete($0);",
+                streamId);
+    }
+
     void releaseHandle(String handleId) {
         ensureInitialized();
         element().executeJs("this.__fsApiHandles.delete($0);", handleId);
@@ -146,7 +216,9 @@ class JsBridge implements Serializable {
         if (!initialized) {
             element()
                     .executeJs("this.__fsApiHandles = this.__fsApiHandles || new Map();"
-                            + "this.__fsApiNextId = this.__fsApiNextId || 0;");
+                            + "this.__fsApiNextId = this.__fsApiNextId || 0;"
+                            + "this.__fsApiWritables = this.__fsApiWritables || new Map();"
+                            + "this.__fsApiNextWritableId = this.__fsApiNextWritableId || 0;");
             initialized = true;
         }
     }

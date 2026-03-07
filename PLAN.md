@@ -29,6 +29,7 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - **Commit messages** should explain the reasons for the change, not implementation details.
 - **NEVER** add co-authors to commit messages.
 - **All classes must have proper Javadocs.** When updating code, Javadocs must be updated accordingly.
+- **Always update the showcase/demo views** (or add new ones if necessary) whenever new features are added or existing ones are modified.
 
 ---
 
@@ -146,22 +147,22 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 ### Step 4: FileSystemFileHandle Operations
 **Goal**: Implement `getFile()` and `createWritable()` with read/write capabilities.
 
-- [ ] `FileData` class wrapping: `name` (String), `size` (long), `type` (String),
+- [x] `FileData` class wrapping: `name` (String), `size` (long), `type` (String),
   `lastModified` (long), `content` (byte[] or InputStream)
-- [ ] `FileSystemFileHandle.getFile()` -> `CompletableFuture<FileData>`:
+- [x] `FileSystemFileHandle.getFile()` -> `CompletableFuture<FileData>`:
   - JS side: `handle.getFile()` -> read as ArrayBuffer -> base64 encode -> return to server
   - Server side: decode base64, wrap in `FileData`
   - Consider chunked transfer for large files
-- [ ] `WritableOptions` record: `keepExistingData` (boolean)
-- [ ] `FileSystemFileHandle.createWritable(WritableOptions)` -> `CompletableFuture<FileSystemWritableFileStream>`
-- [ ] `FileSystemWritableFileStream` class:
+- [x] `WritableOptions` record: `keepExistingData` (boolean)
+- [x] `FileSystemFileHandle.createWritable(WritableOptions)` -> `CompletableFuture<FileSystemWritableFileStream>`
+- [x] `FileSystemWritableFileStream` class:
   - `write(String text)` -> `CompletableFuture<Void>`
   - `write(byte[] data)` -> `CompletableFuture<Void>`
   - `seek(long position)` -> `CompletableFuture<Void>`
   - `truncate(long size)` -> `CompletableFuture<Void>`
   - `close()` -> `CompletableFuture<Void>`
-- [ ] JS module: writable stream registry, write/seek/truncate/close operations
-- [ ] Unit tests (browserless):
+- [x] JS bridge: writable stream registry, write/seek/truncate/close operations
+- [x] Unit tests (browserless):
   - `FileData` construction and accessors
   - `WritableOptions` defaults
 - [ ] Integration test (Playwright):
@@ -214,7 +215,34 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - [ ] Integration test: verify error scenarios (access non-existent file, etc.)
 - [ ] Commit: "feat: error handling and handle lifecycle"
 
-### Step 7: Documentation and README
+### Step 7: UploadHandler and DownloadHandler Integration
+**Goal**: Leverage Vaadin's `UploadHandler` and `DownloadHandler` for efficient large-file
+transfer, avoiding the base64-over-`executeJs` bottleneck.
+
+**Motivation**: The core `getFile()` and `write(byte[])` methods transfer data via base64-encoded
+`executeJs` calls. This works well for small/medium files but is inefficient for large files
+(~33% size inflation, entire content in memory). Vaadin's `UploadHandler` and `DownloadHandler`
+use HTTP streaming, which is far more efficient and supports progress tracking.
+
+- [ ] **Upload integration** (`FileSystemFileHandle` → server via `UploadHandler`):
+  - `FileSystemFileHandle.uploadTo(UploadHandler)` → `CompletableFuture<Void>`
+  - JS side: get `File` from handle, build `FormData`, POST to `UploadHandler` endpoint via `fetch()`
+  - Server side: `UploadHandler` receives the file as a standard multipart upload
+  - Streaming transfer — no base64, no full content in memory
+  - Complementary to `getFile()` (which remains for small files / when content is needed in Java)
+- [ ] **Download integration** (server → `FileSystemWritableFileStream` via `DownloadHandler`):
+  - `FileSystemWritableFileStream.writeFrom(DownloadHandler)` → `CompletableFuture<Void>`
+    or `FileSystemFileHandle.downloadFrom(DownloadHandler)` → `CompletableFuture<Void>`
+  - JS side: `fetch()` the `DownloadHandler` URL, pipe response body into writable stream
+  - Supports `DownloadHandler` progress tracking out of the box
+  - Complementary to `write(byte[])` (which remains for small payloads)
+- [ ] Update demo view with large-file upload/download examples
+- [ ] Unit tests for integration helper methods
+- [ ] Integration test (OPFS-based): upload file content to server via `UploadHandler`,
+  download content from `DownloadHandler` into OPFS file, verify round-trip
+- [ ] Commit: "feat: `UploadHandler` and `DownloadHandler` integration for streaming transfers"
+
+### Step 8: Documentation and README
 **Goal**: Comprehensive documentation for users and contributors.
 
 - [ ] `README.md` with sections:
@@ -226,6 +254,7 @@ detailed sub-plan for that step, and wait for your approval before writing code.
     - Save file picker and write content
     - Browse directory contents
     - OPFS (Origin Private File System) usage
+    - Streaming large files with `UploadHandler` / `DownloadHandler`
   - Full API reference summary table
   - Error handling guide
   - Building from source instructions
@@ -235,7 +264,7 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - [ ] Javadoc on all public classes, methods, and enums
 - [ ] Commit: "docs: README, Javadoc, and usage examples"
 
-### Step 8: Polish and Release Preparation
+### Step 9: Polish and Release Preparation
 **Goal**: Final cleanup, full test pass, CI readiness.
 
 - [ ] Run full test suite: `mvn verify -Pit`
@@ -246,6 +275,10 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - [ ] Clean up any TODO comments or placeholder code
 - [ ] Final Spotless formatting pass
 - [ ] Commit: "chore: polish and release preparation"
+
+**Note**: The plan now has 9 steps. Steps 1–6 cover the core File System API,
+Step 7 adds Vaadin handler integration for efficient large-file transfer,
+and Steps 8–9 handle documentation and release.
 
 ---
 

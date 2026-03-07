@@ -1,0 +1,49 @@
+package com.github.mcollovati.vaadin.filesystem.unit;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.github.mcollovati.vaadin.filesystem.FileData;
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
+
+class FileDataTest {
+
+    @Test
+    void constructorAndAccessors() {
+        byte[] content = "hello".getBytes();
+        var fileData = new FileData("test.txt", 5L, "text/plain", 1700000000000L, content);
+
+        assertEquals("test.txt", fileData.getName());
+        assertEquals(5L, fileData.getSize());
+        assertEquals("text/plain", fileData.getType());
+        assertEquals(1700000000000L, fileData.getLastModified());
+        assertArrayEquals(content, fileData.getContent());
+    }
+
+    @Test
+    void emptyContent() {
+        var fileData = new FileData("empty.bin", 0L, "", 0L, new byte[0]);
+
+        assertEquals(0L, fileData.getSize());
+        assertEquals(0, fileData.getContent().length);
+    }
+
+    @Test
+    void getContentAsInputStream() throws IOException {
+        byte[] content = "stream test".getBytes();
+        var fileData = new FileData("stream.txt", content.length, "text/plain", 0L, content);
+
+        try (var is = fileData.getContentAsInputStream()) {
+            assertArrayEquals(content, is.readAllBytes());
+        }
+    }
+
+    @Test
+    void getContentAsInputStreamEmpty() throws IOException {
+        var fileData = new FileData("empty.txt", 0L, "", 0L, new byte[0]);
+
+        try (var is = fileData.getContentAsInputStream()) {
+            assertEquals(0, is.readAllBytes().length);
+        }
+    }
+}
