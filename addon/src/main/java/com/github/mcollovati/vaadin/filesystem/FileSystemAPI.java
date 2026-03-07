@@ -1,39 +1,56 @@
 package com.github.mcollovati.vaadin.filesystem;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.UploadHandler;
 import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Entry point for the browser's File System API.
+ * High-level, task-oriented API for the browser's File System API.
  *
- * <p>Create an instance bound to a Vaadin {@link Component} to interact
- * with the browser's file system. The component's DOM element is used
- * as the communication bridge for JavaScript calls.
+ * <p>Provides convenient methods that combine picker dialogs with
+ * follow-up operations (read, write, stream) so that common workflows
+ * can be expressed in a single call.
  *
  * <pre>{@code
  * var fs = new FileSystemAPI(myView);
- * fs.showOpenFilePicker().thenAccept(handles -> {
- *     // process selected files
- * });
+ *
+ * // Pick and read a file in one step
+ * fs.openFile().thenAccept(fileData ->
+ *     log(fileData.getName() + ": " + fileData.getSize() + " bytes"));
+ *
+ * // Pick and write text in one step
+ * fs.saveFile("Hello, world!");
  * }</pre>
+ *
+ * <p>For direct access to the low-level picker methods and handle
+ * operations, use {@link FileSystemAPIFull}.
+ *
+ * @see FileSystemAPIFull
+ * @see FileSystemCallbackAPI
  */
 public final class FileSystemAPI implements Serializable {
 
-    private final Component component;
-    private JsBridge bridge;
+    private final FileSystemAPIFull full;
 
     /**
      * Creates a new instance bound to the given component.
      *
-     * <p>The component's DOM element will be used to execute JavaScript
-     * calls and to store the client-side handle registry.
-     *
      * @param component the component to bind to, not {@code null}
      */
     public FileSystemAPI(Component component) {
-        this.component = component;
+        this.full = new FileSystemAPIFull(component);
+    }
+
+    /**
+     * Returns the underlying low-level API for advanced operations.
+     *
+     * @return the full API instance
+     */
+    public FileSystemAPIFull full() {
+        return full;
     }
 
     /**
@@ -43,77 +60,200 @@ public final class FileSystemAPI implements Serializable {
      *         API is available in the browser
      */
     public CompletableFuture<Boolean> isSupported() {
-        return getBridge()
-                .executeJs("return typeof window.showOpenFilePicker === 'function';")
-                .toCompletableFuture(Boolean.class);
+        return full.isSupported();
     }
 
+    // -- Open & Read --
+
     /**
-     * Shows the browser's open file picker dialog with default options.
+     * Opens a file picker and reads the selected file's content.
      *
-     * @return a future that completes with the list of selected file
-     *         handles
-     * @see #showOpenFilePicker(OpenFilePickerOptions)
+     * @return a future that completes with the file data
      */
-    public CompletableFuture<List<FileSystemFileHandle>> showOpenFilePicker() {
-        return showOpenFilePicker(OpenFilePickerOptions.builder().build());
+    public CompletableFuture<FileData> openFile() {
+        return openFile(OpenFilePickerOptions.builder().build());
     }
 
     /**
-     * Shows the browser's open file picker dialog.
-     *
-     * @param options the picker options
-     * @return a future that completes with the list of selected file
-     *         handles
-     */
-    public CompletableFuture<List<FileSystemFileHandle>> showOpenFilePicker(OpenFilePickerOptions options) {
-        return getBridge().showOpenFilePicker(options);
-    }
-
-    /**
-     * Shows the browser's save file picker dialog with default options.
-     *
-     * @return a future that completes with the selected file handle
-     * @see #showSaveFilePicker(SaveFilePickerOptions)
-     */
-    public CompletableFuture<FileSystemFileHandle> showSaveFilePicker() {
-        return showSaveFilePicker(SaveFilePickerOptions.builder().build());
-    }
-
-    /**
-     * Shows the browser's save file picker dialog.
+     * Opens a file picker with the given options and reads the selected
+     * file's content.
      *
      * @param options the picker options
-     * @return a future that completes with the selected file handle
+     * @return a future that completes with the file data
      */
-    public CompletableFuture<FileSystemFileHandle> showSaveFilePicker(SaveFilePickerOptions options) {
-        return getBridge().showSaveFilePicker(options);
+    public CompletableFuture<FileData> openFile(OpenFilePickerOptions options) {
+        return full.showOpenFilePicker(options)
+                .thenCompose(handles -> handles.get(0).getFile());
     }
 
     /**
-     * Shows the browser's directory picker dialog with default options.
+     * Opens a file picker allowing multiple selection and reads all
+     * selected files' content.
      *
-     * @return a future that completes with the selected directory handle
-     * @see #showDirectoryPicker(DirectoryPickerOptions)
+     * @return a future that completes with the list of file data
      */
-    public CompletableFuture<FileSystemDirectoryHandle> showDirectoryPicker() {
-        return showDirectoryPicker(DirectoryPickerOptions.builder().build());
+    public CompletableFuture<List<FileData>> openFiles() {
+        return openFiles(OpenFilePickerOptions.builder().multiple(true).build());
     }
 
     /**
-     * Shows the browser's directory picker dialog.
+     * Opens a file picker with the given options and reads all selected
+     * files' content.
+     *
+     * <p>The options should have {@code multiple(true)} set to allow
+     * selecting more than one file.
      *
      * @param options the picker options
-     * @return a future that completes with the selected directory handle
+     * @return a future that completes with the list of file data
      */
-    public CompletableFuture<FileSystemDirectoryHandle> showDirectoryPicker(DirectoryPickerOptions options) {
-        return getBridge().showDirectoryPicker(options);
+    public CompletableFuture<List<FileData>> openFiles(OpenFilePickerOptions options) {
+        return full.showOpenFilePicker(options).thenCompose(handles -> {
+            List<CompletableFuture<FileData>> futures =
+                    handles.stream().map(FileSystemFileHandle::getFile).toList();
+            return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                    .thenApply(
+                            v -> futures.stream().map(CompletableFuture::join).toList());
+        });
     }
 
-    JsBridge getBridge() {
-        if (bridge == null) {
-            bridge = JsBridge.getForComponent(component);
-        }
-        return bridge;
+    // -- Save & Write --
+
+    /**
+     * Opens a save file picker and writes the given text to the
+     * selected file.
+     *
+     * @param text the text to write
+     * @return a future that completes when the write is done
+     */
+    public CompletableFuture<Void> saveFile(String text) {
+        return saveFile(SaveFilePickerOptions.builder().build(), text);
+    }
+
+    /**
+     * Opens a save file picker with the given options and writes the
+     * given text to the selected file.
+     *
+     * @param options the picker options
+     * @param text    the text to write
+     * @return a future that completes when the write is done
+     */
+    public CompletableFuture<Void> saveFile(SaveFilePickerOptions options, String text) {
+        return full.showSaveFilePicker(options).thenCompose(handle -> handle.writeString(text));
+    }
+
+    /**
+     * Opens a save file picker and writes the given bytes to the
+     * selected file.
+     *
+     * @param data the bytes to write
+     * @return a future that completes when the write is done
+     */
+    public CompletableFuture<Void> saveFile(byte[] data) {
+        return saveFile(SaveFilePickerOptions.builder().build(), data);
+    }
+
+    /**
+     * Opens a save file picker with the given options and writes the
+     * given bytes to the selected file.
+     *
+     * @param options the picker options
+     * @param data    the bytes to write
+     * @return a future that completes when the write is done
+     */
+    public CompletableFuture<Void> saveFile(SaveFilePickerOptions options, byte[] data) {
+        return full.showSaveFilePicker(options).thenCompose(handle -> handle.writeBytes(data));
+    }
+
+    // -- Streaming transfers --
+
+    /**
+     * Opens a file picker and uploads the selected file to the server
+     * using the given handler.
+     *
+     * @param handler the upload handler to receive the file content
+     * @return a future that completes when the upload is done
+     */
+    public CompletableFuture<Void> openFile(UploadHandler handler) {
+        return openFile(OpenFilePickerOptions.builder().build(), handler);
+    }
+
+    /**
+     * Opens a file picker with the given options and uploads the selected
+     * file to the server using the given handler.
+     *
+     * @param options the picker options
+     * @param handler the upload handler to receive the file content
+     * @return a future that completes when the upload is done
+     */
+    public CompletableFuture<Void> openFile(OpenFilePickerOptions options, UploadHandler handler) {
+        return full.showOpenFilePicker(options)
+                .thenCompose(handles -> handles.get(0).uploadTo(handler));
+    }
+
+    /**
+     * Opens a save file picker and downloads content from the server
+     * into the selected file using the given handler.
+     *
+     * @param handler the download handler providing the content
+     * @return a future that completes when the download is done
+     */
+    public CompletableFuture<Void> saveFile(DownloadHandler handler) {
+        return saveFile(SaveFilePickerOptions.builder().build(), handler);
+    }
+
+    /**
+     * Opens a save file picker with the given options and downloads
+     * content from the server into the selected file using the given
+     * handler.
+     *
+     * @param options the picker options
+     * @param handler the download handler providing the content
+     * @return a future that completes when the download is done
+     */
+    public CompletableFuture<Void> saveFile(SaveFilePickerOptions options, DownloadHandler handler) {
+        return full.showSaveFilePicker(options).thenCompose(handle -> handle.downloadFrom(handler));
+    }
+
+    // -- Directory --
+
+    /**
+     * Opens a directory picker and returns the selected directory handle.
+     *
+     * @return a future that completes with the directory handle
+     */
+    public CompletableFuture<FileSystemDirectoryHandle> openDirectory() {
+        return openDirectory(DirectoryPickerOptions.builder().build());
+    }
+
+    /**
+     * Opens a directory picker with the given options and returns the
+     * selected directory handle.
+     *
+     * @param options the picker options
+     * @return a future that completes with the directory handle
+     */
+    public CompletableFuture<FileSystemDirectoryHandle> openDirectory(DirectoryPickerOptions options) {
+        return full.showDirectoryPicker(options);
+    }
+
+    /**
+     * Opens a directory picker and lists all entries in the selected
+     * directory.
+     *
+     * @return a future that completes with the list of handles
+     */
+    public CompletableFuture<List<FileSystemHandle>> listDirectory() {
+        return listDirectory(DirectoryPickerOptions.builder().build());
+    }
+
+    /**
+     * Opens a directory picker with the given options and lists all
+     * entries in the selected directory.
+     *
+     * @param options the picker options
+     * @return a future that completes with the list of handles
+     */
+    public CompletableFuture<List<FileSystemHandle>> listDirectory(DirectoryPickerOptions options) {
+        return full.showDirectoryPicker(options).thenCompose(FileSystemDirectoryHandle::entries);
     }
 }

@@ -1,4 +1,4 @@
-package com.github.mcollovati.vaadin.filesystem.views;
+package com.github.mcollovati.vaadin.filesystem.views.callback;
 
 import com.github.mcollovati.vaadin.filesystem.DirectoryPickerOptions;
 import com.github.mcollovati.vaadin.filesystem.FileSystemHandle;
@@ -9,33 +9,34 @@ import com.vaadin.flow.router.Route;
 import java.util.List;
 
 /**
- * Demo view showcasing directory operations with the high-level API.
+ * Demo view showcasing directory operations with the callback API.
  */
-@Route("directory")
-public class DirectoryDemoView extends AbstractDemoView {
+@Route("callback/directory")
+public class DirectoryDemoView extends AbstractCallbackDemoView {
 
     public DirectoryDemoView() {
         super(
-                "Directory Operations",
-                "Open a directory with openDirectory() or list entries directly "
-                        + "with listDirectory(). The high-level API provides convenient "
-                        + "one-step methods for common directory workflows.");
+                "Directory Operations (Callback API)",
+                "Open a directory or list entries using callbacks. "
+                        + "Provide onSuccess and onError handlers instead of "
+                        + "chaining CompletableFuture.");
     }
 
     @Override
     String codeSnippet() {
         return """
                 // Open and get a directory handle
-                fs.openDirectory().thenAccept(dir -> { ... });
+                fs.openDirectory(
+                    dir -> log(dir.getName()),
+                    error -> log(error.getMessage()));
 
                 // List entries in one step
                 var opts = DirectoryPickerOptions.builder()
                         .mode(PermissionMode.READWRITE).build();
-                fs.listDirectory(opts).thenAccept(entries -> {
-                    for (var entry : entries) {
-                        log(entry.getKind() + ": " + entry.getName());
-                    }
-                });""";
+                fs.listDirectory(opts,
+                    entries -> entries.forEach(e ->
+                        log(e.getKind() + ": " + e.getName())),
+                    error -> log(error.getMessage()));""";
     }
 
     @Override
@@ -46,15 +47,15 @@ public class DirectoryDemoView extends AbstractDemoView {
     }
 
     private void onOpenDirectory() {
-        fs().openDirectory()
-                .thenAccept(handle -> appendLog("Opened: " + handle.getName() + " (" + handle.getKind() + ")"))
-                .exceptionally(this::logError);
+        fs().openDirectory(
+                        handle -> appendLog("Opened: " + handle.getName() + " (" + handle.getKind() + ")"),
+                        this::logError);
     }
 
     private void onListDirectory() {
         var options =
                 DirectoryPickerOptions.builder().mode(PermissionMode.READWRITE).build();
-        fs().listDirectory(options).thenAccept(this::logEntries).exceptionally(this::logError);
+        fs().listDirectory(options, this::logEntries, this::logError);
     }
 
     private void logEntries(List<FileSystemHandle> entries) {

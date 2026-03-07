@@ -22,6 +22,15 @@ public record RemoveEntryOptions(boolean recursive) implements Serializable {
     }
 
     /**
+     * Returns options with {@code recursive} set to {@code true}.
+     *
+     * @return options for recursive removal
+     */
+    public static RemoveEntryOptions recursively() {
+        return new RemoveEntryOptions(true);
+    }
+
+    /**
      * Returns a new builder for {@link RemoveEntryOptions}.
      *
      * @return a new builder

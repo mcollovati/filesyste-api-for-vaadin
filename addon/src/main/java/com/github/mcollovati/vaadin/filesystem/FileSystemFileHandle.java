@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>This is the Java counterpart of the browser's
  * {@code FileSystemFileHandle} interface. Instances are obtained through
- * picker methods on {@link FileSystemAPI} or through
+ * picker methods on {@link FileSystemAPIFull} or through
  * {@link FileSystemDirectoryHandle#getFileHandle(String, GetHandleOptions)}.
  *
  * @see FileSystemHandle
@@ -67,6 +67,28 @@ public final class FileSystemFileHandle extends AbstractFileSystemHandle {
      */
     public CompletableFuture<FileSystemWritableFileStream> createWritable(WritableOptions options) {
         return bridge().createWritable(handleId(), options);
+    }
+
+    /**
+     * Writes a text string to this file, creating and closing a writable
+     * stream internally.
+     *
+     * @param text the text to write
+     * @return a future that completes when the write is done
+     */
+    public CompletableFuture<Void> writeString(String text) {
+        return createWritable().thenCompose(w -> w.write(text).thenCompose(v -> w.close()));
+    }
+
+    /**
+     * Writes binary data to this file, creating and closing a writable
+     * stream internally.
+     *
+     * @param data the bytes to write
+     * @return a future that completes when the write is done
+     */
+    public CompletableFuture<Void> writeBytes(byte[] data) {
+        return createWritable().thenCompose(w -> w.write(data).thenCompose(v -> w.close()));
     }
 
     /**

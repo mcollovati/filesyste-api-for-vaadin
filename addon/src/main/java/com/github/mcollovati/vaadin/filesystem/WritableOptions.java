@@ -23,6 +23,15 @@ public record WritableOptions(boolean keepExistingData) implements Serializable 
     }
 
     /**
+     * Returns options with {@code keepExistingData} set to {@code true}.
+     *
+     * @return options that preserve existing file content
+     */
+    public static WritableOptions keepingExistingData() {
+        return new WritableOptions(true);
+    }
+
+    /**
      * Returns a new builder for {@link WritableOptions}.
      *
      * @return a new builder

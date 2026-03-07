@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.io.Serializable;
 
 /**
- * Options for {@link FileSystemAPI#showDirectoryPicker(DirectoryPickerOptions)}.
+ * Options for {@link FileSystemAPIFull#showDirectoryPicker(DirectoryPickerOptions)}.
  *
  * <p>Use the {@link #builder()} to create an instance.
  *
@@ -62,16 +62,23 @@ public final class DirectoryPickerOptions implements Serializable {
         /**
          * Sets the starting directory to a well-known directory name.
          *
-         * <p>Valid values include {@code "desktop"}, {@code "documents"},
-         * {@code "downloads"}, {@code "music"}, {@code "pictures"}, and
-         * {@code "videos"}.
-         *
          * @param wellKnownDirectory the directory name
          * @return this builder
+         * @see WellKnownDirectory
          */
         public Builder startIn(String wellKnownDirectory) {
             options.startIn = wellKnownDirectory;
             return this;
+        }
+
+        /**
+         * Sets the starting directory to a well-known directory.
+         *
+         * @param directory the well-known directory
+         * @return this builder
+         */
+        public Builder startIn(WellKnownDirectory directory) {
+            return startIn(directory.getValue());
         }
 
         /**

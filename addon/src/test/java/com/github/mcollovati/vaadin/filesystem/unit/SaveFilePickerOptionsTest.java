@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.mcollovati.vaadin.filesystem.FileTypeFilter;
 import com.github.mcollovati.vaadin.filesystem.SaveFilePickerOptions;
+import com.github.mcollovati.vaadin.filesystem.WellKnownDirectory;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -37,5 +38,20 @@ class SaveFilePickerOptionsTest {
     void builderSetsStartInString() {
         var options = SaveFilePickerOptions.builder().startIn("downloads").build();
         assertEquals("downloads", options.getStartIn());
+    }
+
+    @Test
+    void builderSetsStartInWellKnownDirectory() {
+        var options = SaveFilePickerOptions.builder()
+                .startIn(WellKnownDirectory.DOWNLOADS)
+                .build();
+        assertEquals("downloads", options.getStartIn());
+    }
+
+    @Test
+    void builderSetsTypesVarargs() {
+        var filter = FileTypeFilter.of("PDF", "application/pdf", ".pdf");
+        var options = SaveFilePickerOptions.builder().types(filter).build();
+        assertEquals(1, options.getTypes().size());
     }
 }

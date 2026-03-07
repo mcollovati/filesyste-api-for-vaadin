@@ -25,6 +25,15 @@ public record GetHandleOptions(boolean create) implements Serializable {
     }
 
     /**
+     * Returns options with {@code create} set to {@code true}.
+     *
+     * @return options that create the entry if it does not exist
+     */
+    public static GetHandleOptions creating() {
+        return new GetHandleOptions(true);
+    }
+
+    /**
      * Returns a new builder for {@link GetHandleOptions}.
      *
      * @return a new builder

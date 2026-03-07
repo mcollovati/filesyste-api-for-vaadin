@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.mcollovati.vaadin.filesystem.FileTypeFilter;
 import com.github.mcollovati.vaadin.filesystem.OpenFilePickerOptions;
+import com.github.mcollovati.vaadin.filesystem.WellKnownDirectory;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -44,5 +45,21 @@ class OpenFilePickerOptionsTest {
     void builderSetsStartInString() {
         var options = OpenFilePickerOptions.builder().startIn("documents").build();
         assertEquals("documents", options.getStartIn());
+    }
+
+    @Test
+    void builderSetsStartInWellKnownDirectory() {
+        var options = OpenFilePickerOptions.builder()
+                .startIn(WellKnownDirectory.PICTURES)
+                .build();
+        assertEquals("pictures", options.getStartIn());
+    }
+
+    @Test
+    void builderSetsTypesVarargs() {
+        var filter1 = FileTypeFilter.of("Images", "image/*", ".png");
+        var filter2 = FileTypeFilter.of("PDF", "application/pdf", ".pdf");
+        var options = OpenFilePickerOptions.builder().types(filter1, filter2).build();
+        assertEquals(2, options.getTypes().size());
     }
 }

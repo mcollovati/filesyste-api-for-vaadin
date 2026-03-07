@@ -5,7 +5,7 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Options for {@link FileSystemAPI#showSaveFilePicker(SaveFilePickerOptions)}.
+ * Options for {@link FileSystemAPIFull#showSaveFilePicker(SaveFilePickerOptions)}.
  *
  * <p>Use the {@link #builder()} to create an instance.
  *
@@ -93,6 +93,16 @@ public final class SaveFilePickerOptions implements Serializable {
         }
 
         /**
+         * Sets the file type filters (varargs convenience).
+         *
+         * @param types the filters
+         * @return this builder
+         */
+        public Builder types(FileTypeFilter... types) {
+            return types(List.of(types));
+        }
+
+        /**
          * Sets whether to exclude the generic "all files" filter option.
          *
          * @param excludeAcceptAllOption {@code true} to exclude
@@ -117,16 +127,23 @@ public final class SaveFilePickerOptions implements Serializable {
         /**
          * Sets the starting directory to a well-known directory name.
          *
-         * <p>Valid values include {@code "desktop"}, {@code "documents"},
-         * {@code "downloads"}, {@code "music"}, {@code "pictures"}, and
-         * {@code "videos"}.
-         *
          * @param wellKnownDirectory the directory name
          * @return this builder
+         * @see WellKnownDirectory
          */
         public Builder startIn(String wellKnownDirectory) {
             options.startIn = wellKnownDirectory;
             return this;
+        }
+
+        /**
+         * Sets the starting directory to a well-known directory.
+         *
+         * @param directory the well-known directory
+         * @return this builder
+         */
+        public Builder startIn(WellKnownDirectory directory) {
+            return startIn(directory.getValue());
         }
 
         /**

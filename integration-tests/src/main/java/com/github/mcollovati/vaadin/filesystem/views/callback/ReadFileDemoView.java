@@ -1,4 +1,4 @@
-package com.github.mcollovati.vaadin.filesystem.views;
+package com.github.mcollovati.vaadin.filesystem.views.callback;
 
 import com.github.mcollovati.vaadin.filesystem.FileData;
 import com.vaadin.flow.component.button.Button;
@@ -6,29 +6,29 @@ import com.vaadin.flow.router.Route;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Demo view showcasing file reading with the high-level API.
+ * Demo view showcasing file reading with the callback API.
  */
-@Route("read-file")
-public class ReadFileDemoView extends AbstractDemoView {
+@Route("callback/read-file")
+public class ReadFileDemoView extends AbstractCallbackDemoView {
 
     public ReadFileDemoView() {
         super(
-                "Read File",
-                "Open and read a file in one call with fs.openFile(). "
-                        + "The method picks a file and returns a FileData object "
-                        + "containing name, size, MIME type, and byte content.");
+                "Read File (Callback API)",
+                "Open and read a file using a callback. Just provide an "
+                        + "onSuccess consumer and an optional onError consumer.");
     }
 
     @Override
     String codeSnippet() {
         return """
-                fs.openFile().thenAccept(fileData -> {
-                    String name = fileData.getName();
-                    long size = fileData.getSize();
-                    String type = fileData.getType();
-                    byte[] content = fileData.getContent();
-                    InputStream is = fileData.getContentAsInputStream();
-                });""";
+                fs.openFile(
+                    fileData -> {
+                        String name = fileData.getName();
+                        long size = fileData.getSize();
+                        String type = fileData.getType();
+                        byte[] content = fileData.getContent();
+                    },
+                    error -> log(error.getMessage()));""";
     }
 
     @Override
@@ -37,7 +37,7 @@ public class ReadFileDemoView extends AbstractDemoView {
     }
 
     private void onReadFile() {
-        fs().openFile().thenAccept(this::logFileData).exceptionally(this::logError);
+        fs().openFile(this::logFileData, this::logError);
     }
 
     private void logFileData(FileData fileData) {

@@ -1,4 +1,4 @@
-package com.github.mcollovati.vaadin.filesystem.views;
+package com.github.mcollovati.vaadin.filesystem.views.callback;
 
 import com.github.mcollovati.vaadin.filesystem.FileTypeFilter;
 import com.github.mcollovati.vaadin.filesystem.SaveFilePickerOptions;
@@ -7,17 +7,16 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Route;
 
 /**
- * Demo view showcasing file writing with the high-level API.
+ * Demo view showcasing file writing with the callback API.
  */
-@Route("write-file")
-public class WriteFileDemoView extends AbstractDemoView {
+@Route("callback/write-file")
+public class WriteFileDemoView extends AbstractCallbackDemoView {
 
     public WriteFileDemoView() {
         super(
-                "Write File",
-                "Pick a save location and write content in one call with "
-                        + "fs.saveFile(options, text). The method handles picker + "
-                        + "writable stream creation + write + close internally.");
+                "Write File (Callback API)",
+                "Pick a save location and write content using callbacks. "
+                        + "Provide onSuccess (Runnable) and onError handlers.");
     }
 
     @Override
@@ -29,7 +28,9 @@ public class WriteFileDemoView extends AbstractDemoView {
                             "text/plain", ".txt"))
                         .build();
 
-                fs.saveFile(opts, "Hello from Vaadin!");""";
+                fs.saveFile(opts, "Hello from Vaadin!",
+                    () -> log("Write complete"),
+                    error -> log(error.getMessage()));""";
     }
 
     @Override
@@ -44,15 +45,15 @@ public class WriteFileDemoView extends AbstractDemoView {
                 .suggestedName("hello.txt")
                 .types(FileTypeFilter.of("Text files", "text/plain", ".txt"))
                 .build();
-        fs().saveFile(options, "Hello from Vaadin File System API!")
-                .thenRun(() -> appendLog("Write complete"))
-                .exceptionally(this::logError);
+        fs().saveFile(options, "Hello from Vaadin File System API!", () -> appendLog("Write complete"), this::logError);
     }
 
     private void onWriteBytes() {
         var options = SaveFilePickerOptions.builder().suggestedName("data.bin").build();
-        fs().saveFile(options, new byte[] {0x48, 0x65, 0x6C, 0x6C, 0x6F})
-                .thenRun(() -> appendLog("Write complete"))
-                .exceptionally(this::logError);
+        fs().saveFile(
+                        options,
+                        new byte[] {0x48, 0x65, 0x6C, 0x6C, 0x6F},
+                        () -> appendLog("Write complete"),
+                        this::logError);
     }
 }

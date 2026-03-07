@@ -16,9 +16,6 @@ import com.vaadin.flow.router.Layout;
 @Layout
 public class MainLayout extends AppLayout {
 
-    /**
-     * Creates the main layout with navigation sidebar.
-     */
     public MainLayout() {
         var toggle = new DrawerToggle();
         var title = new H1("File System API");
@@ -30,11 +27,41 @@ public class MainLayout extends AppLayout {
 
     private SideNav createSideNav() {
         var nav = new SideNav();
-        nav.addItem(new SideNavItem("File Pickers", FilePickerDemoView.class));
-        nav.addItem(new SideNavItem("Read File", ReadFileDemoView.class));
-        nav.addItem(new SideNavItem("Write File", WriteFileDemoView.class));
-        nav.addItem(new SideNavItem("Directory", DirectoryDemoView.class));
-        nav.addItem(new SideNavItem("Streaming", StreamingDemoView.class));
+
+        var highLevel = new SideNavItem("High-level API");
+        highLevel.addItem(new SideNavItem("File Pickers", FilePickerDemoView.class));
+        highLevel.addItem(new SideNavItem("Read File", ReadFileDemoView.class));
+        highLevel.addItem(new SideNavItem("Write File", WriteFileDemoView.class));
+        highLevel.addItem(new SideNavItem("Directory", DirectoryDemoView.class));
+        highLevel.addItem(new SideNavItem("Streaming", StreamingDemoView.class));
+        nav.addItem(highLevel);
+
+        var callback = new SideNavItem("Callback API");
+        callback.addItem(new SideNavItem(
+                "File Pickers", com.github.mcollovati.vaadin.filesystem.views.callback.FilePickerDemoView.class));
+        callback.addItem(new SideNavItem(
+                "Read File", com.github.mcollovati.vaadin.filesystem.views.callback.ReadFileDemoView.class));
+        callback.addItem(new SideNavItem(
+                "Write File", com.github.mcollovati.vaadin.filesystem.views.callback.WriteFileDemoView.class));
+        callback.addItem(new SideNavItem(
+                "Directory", com.github.mcollovati.vaadin.filesystem.views.callback.DirectoryDemoView.class));
+        callback.addItem(new SideNavItem(
+                "Streaming", com.github.mcollovati.vaadin.filesystem.views.callback.StreamingDemoView.class));
+        nav.addItem(callback);
+
+        var full = new SideNavItem("Full API");
+        full.addItem(new SideNavItem(
+                "File Pickers", com.github.mcollovati.vaadin.filesystem.views.full.FilePickerDemoView.class));
+        full.addItem(new SideNavItem(
+                "Read File", com.github.mcollovati.vaadin.filesystem.views.full.ReadFileDemoView.class));
+        full.addItem(new SideNavItem(
+                "Write File", com.github.mcollovati.vaadin.filesystem.views.full.WriteFileDemoView.class));
+        full.addItem(new SideNavItem(
+                "Directory", com.github.mcollovati.vaadin.filesystem.views.full.DirectoryDemoView.class));
+        full.addItem(new SideNavItem(
+                "Streaming", com.github.mcollovati.vaadin.filesystem.views.full.StreamingDemoView.class));
+        nav.addItem(full);
+
         return nav;
     }
 
@@ -44,7 +71,7 @@ public class MainLayout extends AppLayout {
      * @param code the source code text
      * @return a styled {@link Span} wrapping the code
      */
-    static Span codeBlock(String code) {
+    public static Span codeBlock(String code) {
         var span = new Span(code);
         span.getElement()
                 .setAttribute(

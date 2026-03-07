@@ -1,4 +1,4 @@
-package com.github.mcollovati.vaadin.filesystem.views;
+package com.github.mcollovati.vaadin.filesystem.views.callback;
 
 import com.github.mcollovati.vaadin.filesystem.FileTypeFilter;
 import com.github.mcollovati.vaadin.filesystem.OpenFilePickerOptions;
@@ -8,20 +8,20 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.Route;
 
 /**
- * Demo view showcasing the high-level file picker operations.
+ * Demo view showcasing file picker operations with the callback API.
  */
-@Route("")
-public class FilePickerDemoView extends AbstractDemoView {
+@Route("callback/file-pickers")
+public class FilePickerDemoView extends AbstractCallbackDemoView {
 
     public FilePickerDemoView() {
         super(
-                "File Pickers",
-                "Open files and read their content in a single call with openFile() "
-                        + "and openFiles(). The high-level API combines picker + read into "
-                        + "one step, returning FileData directly.");
+                "File Pickers (Callback API)",
+                "Open files and read their content using callbacks. "
+                        + "No CompletableFuture chaining needed — just provide "
+                        + "success and error handlers.");
 
         var status = new Span("Checking...");
-        fs().isSupported().thenAccept(supported -> getUI().ifPresent(ui -> ui.access(() -> {
+        fs().isSupported(supported -> getUI().ifPresent(ui -> ui.access(() -> {
             if (supported) {
                 status.setText("File System API is supported");
                 status.getStyle().set("color", "var(--lumo-success-color)");
@@ -37,19 +37,23 @@ public class FilePickerDemoView extends AbstractDemoView {
     String codeSnippet() {
         return """
                 // Open and read a single file
-                fs.openFile().thenAccept(fileData ->
-                    log(fileData.getName() + ": " + fileData.getSize() + " bytes"));
+                fs.openFile(
+                    fileData -> log(fileData.getName()),
+                    error -> log(error.getMessage()));
 
                 // Open and read multiple files
-                fs.openFiles().thenAccept(files ->
-                    files.forEach(f -> log(f.getName())));
+                fs.openFiles(
+                    files -> files.forEach(f -> log(f.getName())),
+                    error -> log(error.getMessage()));
 
                 // Filtered by type
                 var opts = OpenFilePickerOptions.builder()
                         .types(FileTypeFilter.of("Images", "image/*",
                             ".png", ".jpg"))
                         .build();
-                fs.openFile(opts).thenAccept(fileData -> { ... });""";
+                fs.openFile(opts,
+                    fileData -> log(fileData.getName()),
+                    error -> log(error.getMessage()));""";
     }
 
     @Override
@@ -61,28 +65,27 @@ public class FilePickerDemoView extends AbstractDemoView {
     }
 
     private void onOpenFile() {
-        fs().openFile()
-                .thenAccept(
-                        fileData -> appendLog("Opened: " + fileData.getName() + " (" + fileData.getSize() + " bytes)"))
-                .exceptionally(this::logError);
+        fs().openFile(
+                        fileData -> appendLog("Opened: " + fileData.getName() + " (" + fileData.getSize() + " bytes)"),
+                        this::logError);
     }
 
     private void onOpenMultiple() {
-        fs().openFiles()
-                .thenAccept(files -> {
-                    appendLog("Opened " + files.size() + " file(s):");
-                    files.forEach(f -> appendLog("  " + f.getName() + " (" + f.getSize() + " bytes)"));
-                })
-                .exceptionally(this::logError);
+        fs().openFiles(
+                        files -> {
+                            appendLog("Opened " + files.size() + " file(s):");
+                            files.forEach(f -> appendLog("  " + f.getName() + " (" + f.getSize() + " bytes)"));
+                        },
+                        this::logError);
     }
 
     private void onOpenImages() {
         var options = OpenFilePickerOptions.builder()
                 .types(FileTypeFilter.of("Images", "image/*", ".png", ".jpg", ".gif"))
                 .build();
-        fs().openFile(options)
-                .thenAccept(
-                        fileData -> appendLog("Opened: " + fileData.getName() + " (" + fileData.getSize() + " bytes)"))
-                .exceptionally(this::logError);
+        fs().openFile(
+                        options,
+                        fileData -> appendLog("Opened: " + fileData.getName() + " (" + fileData.getSize() + " bytes)"),
+                        this::logError);
     }
 }

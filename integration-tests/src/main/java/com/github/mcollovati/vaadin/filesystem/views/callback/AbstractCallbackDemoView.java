@@ -1,22 +1,24 @@
-package com.github.mcollovati.vaadin.filesystem.views;
+package com.github.mcollovati.vaadin.filesystem.views.callback;
 
-import com.github.mcollovati.vaadin.filesystem.FileSystemAPI;
+import com.github.mcollovati.vaadin.filesystem.FileSystemCallbackAPI;
+import com.github.mcollovati.vaadin.filesystem.views.MainLayout;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Pre;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import java.util.concurrent.CompletionException;
 
 /**
- * Base class for high-level API demo views.
+ * Base class for callback API demo views.
  */
-abstract class AbstractDemoView extends VerticalLayout {
+abstract class AbstractCallbackDemoView extends VerticalLayout {
 
-    private final FileSystemAPI fs;
+    private final FileSystemCallbackAPI fs;
     private final Pre log;
 
-    AbstractDemoView(String title, String description) {
-        fs = new FileSystemAPI(this);
+    AbstractCallbackDemoView(String title, String description) {
+        fs = new FileSystemCallbackAPI(this);
         log = new Pre();
         log.getStyle()
                 .set("background", "var(--lumo-contrast-5pct)")
@@ -36,7 +38,7 @@ abstract class AbstractDemoView extends VerticalLayout {
         add(log);
     }
 
-    FileSystemAPI fs() {
+    FileSystemCallbackAPI fs() {
         return fs;
     }
 
@@ -51,11 +53,10 @@ abstract class AbstractDemoView extends VerticalLayout {
         }));
     }
 
-    Void logError(Throwable error) {
-        Throwable cause = error instanceof java.util.concurrent.CompletionException ? error.getCause() : error;
+    void logError(Throwable error) {
+        Throwable cause = error instanceof CompletionException ? error.getCause() : error;
         String type = cause.getClass().getSimpleName();
         appendLog(type + ": " + cause.getMessage());
-        return null;
     }
 
     void addContent(Component... components) {

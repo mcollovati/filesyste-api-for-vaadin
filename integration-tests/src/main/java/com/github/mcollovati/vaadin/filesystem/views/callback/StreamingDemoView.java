@@ -1,4 +1,4 @@
-package com.github.mcollovati.vaadin.filesystem.views;
+package com.github.mcollovati.vaadin.filesystem.views.callback;
 
 import com.github.mcollovati.vaadin.filesystem.SaveFilePickerOptions;
 import com.vaadin.flow.component.button.Button;
@@ -11,32 +11,36 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Demo view showcasing streaming transfers with the high-level API.
+ * Demo view showcasing streaming transfers with the callback API.
  */
-@Route("streaming")
-public class StreamingDemoView extends AbstractDemoView {
+@Route("callback/streaming")
+public class StreamingDemoView extends AbstractCallbackDemoView {
 
     public StreamingDemoView() {
         super(
-                "Streaming Transfers",
+                "Streaming Transfers (Callback API)",
                 "Upload a file via openFile(UploadHandler) or download server content "
-                        + "via saveFile(DownloadHandler). The high-level API combines picker "
-                        + "and streaming in a single call.");
+                        + "via saveFile(DownloadHandler) using callbacks for completion "
+                        + "and error notification.");
     }
 
     @Override
     String codeSnippet() {
         return """
-                // Upload: pick file + stream to server in one call
+                // Upload: pick file + stream to server
                 var handler = UploadHandler.inMemory(
                     (metadata, bytes) -> log("Received " + bytes.length));
-                fs.openFile(handler);
+                fs.openFile(handler,
+                    () -> log("Upload complete"),
+                    error -> log(error.getMessage()));
 
                 // Download: pick save location + stream from server
                 var handler = DownloadHandler.fromInputStream(event ->
                     new DownloadResponse(inputStream, "file.txt",
                         "text/plain", content.length));
-                fs.saveFile(handler);""";
+                fs.saveFile(handler,
+                    () -> log("Download complete"),
+                    error -> log(error.getMessage()));""";
     }
 
     @Override
@@ -49,7 +53,7 @@ public class StreamingDemoView extends AbstractDemoView {
     private void onUpload() {
         var handler = UploadHandler.inMemory((metadata, bytes) -> appendLog(
                 "Uploaded: " + metadata.fileName() + " (" + bytes.length + " bytes, " + metadata.contentType() + ")"));
-        fs().openFile(handler).thenRun(() -> appendLog("Upload complete")).exceptionally(this::logError);
+        fs().openFile(handler, () -> appendLog("Upload complete"), this::logError);
     }
 
     private void onDownload() {
@@ -59,8 +63,6 @@ public class StreamingDemoView extends AbstractDemoView {
                 SaveFilePickerOptions.builder().suggestedName("streamed.txt").build();
         var handler = DownloadHandler.fromInputStream(event ->
                 new DownloadResponse(new ByteArrayInputStream(content), "streamed.txt", "text/plain", content.length));
-        fs().saveFile(options, handler)
-                .thenRun(() -> appendLog("Download complete"))
-                .exceptionally(this::logError);
+        fs().saveFile(options, handler, () -> appendLog("Download complete"), this::logError);
     }
 }

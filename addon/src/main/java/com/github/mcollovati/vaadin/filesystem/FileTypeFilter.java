@@ -20,4 +20,21 @@ import java.util.Map;
  * @see OpenFilePickerOptions
  * @see SaveFilePickerOptions
  */
-public record FileTypeFilter(String description, Map<String, List<String>> accept) implements Serializable {}
+public record FileTypeFilter(String description, Map<String, List<String>> accept) implements Serializable {
+
+    /**
+     * Creates a filter for a single MIME type with optional extensions.
+     *
+     * <pre>{@code
+     * FileTypeFilter.of("Images", "image/*", ".png", ".jpg")
+     * }</pre>
+     *
+     * @param description a human-readable description
+     * @param mimeType    the MIME type (e.g. {@code "image/*"})
+     * @param extensions  file extensions (e.g. {@code ".png"})
+     * @return a new filter
+     */
+    public static FileTypeFilter of(String description, String mimeType, String... extensions) {
+        return new FileTypeFilter(description, Map.of(mimeType, List.of(extensions)));
+    }
+}
