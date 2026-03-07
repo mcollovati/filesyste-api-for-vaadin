@@ -125,7 +125,7 @@
                 <configuration>
                     <java>
                         <licenseHeader>
-                            <file>${maven.multiModuleProjectDirectory}/license-header.txt</file>
+                            <file>${maven.multiModuleProjectDirectory}/etc/license-header.txt</file>
                         </licenseHeader>
                         <palantirJavaFormat>
                             <version>2.50.0</version>
