@@ -1,0 +1,137 @@
+# Filesystem API for Vaadin
+
+A Vaadin add-on that provides a Java API for the browser's
+[File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API),
+enabling server-side Java code to trigger file/directory pickers, read and write
+files, and traverse directory structures through native browser filesystem access.
+
+## Features
+
+- **File pickers** — open, save, and directory picker dialogs from server-side Java
+- **Read and write files** — transfer file content between browser and server
+- **Directory traversal** — list entries, create/remove files and subdirectories
+- **Origin Private File System (OPFS)** — sandboxed storage without user prompts
+- **Streaming transfers** — efficient large-file upload/download via Vaadin's
+  `UploadHandler` and `DownloadHandler`
+- **Two API styles** — `CompletableFuture`-based and callback-based
+- **Handle lifecycle management** — automatic cleanup on component detach
+
+## Browser Compatibility
+
+The File System API (file pickers) is supported in **Chromium-based browsers**
+(Chrome, Edge, Opera). Firefox and Safari have partial support limited to OPFS.
+
+See [MDN browser compatibility](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API#browser_compatibility)
+for details.
+
+## Requirements
+
+- Java 21+
+- Vaadin 25+
+
+## Installation
+
+Add the dependency to your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>com.github.mcollovati</groupId>
+    <artifactId>filesystem-api</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+## Getting Started
+
+Create a `FileSystemAPI` instance bound to any Vaadin component (typically your
+view) and use it to interact with the browser's file system.
+
+### Read a file
+
+```java
+var fs = new FileSystemAPI(this);
+
+fs.openFile().thenAccept(fileData -> {
+    String name = fileData.getName();
+    long size = fileData.getSize();
+    byte[] content = fileData.getContent();
+    Notification.show("Read " + name + " (" + size + " bytes)");
+});
+```
+
+### Write a file
+
+```java
+var fs = new FileSystemAPI(this);
+
+var options = SaveFilePickerOptions.builder()
+        .suggestedName("hello.txt")
+        .build();
+fs.saveFile(options, "Hello, world!");
+```
+
+### Browse a directory
+
+```java
+var fs = new FileSystemAPI(this);
+
+fs.listDirectory().thenAccept(entries -> {
+    for (FileSystemHandle entry : entries) {
+        System.out.println(entry.getName() + " (" + entry.getKind() + ")");
+    }
+});
+```
+
+### Callback-based API
+
+If you prefer callbacks over futures:
+
+```java
+var fs = new FileSystemCallbackAPI(this);
+
+fs.openFile(
+    fileData -> Notification.show("Read: " + fileData.getName()),
+    error -> Notification.show("Error: " + error.getMessage()));
+```
+
+### Streaming large files
+
+For large files, use Vaadin's `UploadHandler` / `DownloadHandler` to avoid
+base64 overhead:
+
+```java
+var fs = new FileSystemAPI(this);
+
+// Upload: browser file -> server
+fs.openFile(UploadHandler.inMemory((meta, data) -> {
+    byte[] content = data.asBytes();
+    // process content...
+}));
+
+// Download: server -> browser file
+fs.saveFile(DownloadHandler.forFixedContent("report.csv",
+        csvContent.getBytes(), "text/csv"));
+```
+
+For the full API reference, detailed examples, and error handling guide, see
+[DOCUMENTATION.md](DOCUMENTATION.md).
+
+## Building from Source
+
+```bash
+# Compile and run unit tests
+mvn clean verify
+
+# Run integration tests (Playwright + Jetty)
+mvn verify -Pit
+
+# Format code
+mvn spotless:apply
+
+# Build for Vaadin Directory
+mvn install -Pdirectory -pl addon
+```
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE) for details.
