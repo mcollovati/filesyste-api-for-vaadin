@@ -141,7 +141,7 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - [x] JS handle registration with `startIn` handle resolution in `JsBridge`
 - [x] `@JsonValue` on `PermissionMode.getJsValue()` for proper serialization
 - [x] Unit tests for options builders
-- [ ] Integration test (Playwright): `isSupported()`, picker error handling (deferred to Step 6)
+- [x] Integration test (Playwright): `isSupported()`, picker error handling (deferred to Step 6)
 - [x] Commit: "feat: file and directory picker methods"
 
 ### Step 4: FileSystemFileHandle Operations
@@ -165,10 +165,10 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - [x] Unit tests (browserless):
   - `FileData` construction and accessors
   - `WritableOptions` defaults
-- [ ] Integration test (Playwright):
+- [x] Integration test (Playwright):
   - OPFS-based test: create file in Origin Private File System, write content,
     read back and verify (avoids native file picker dialogs)
-- [ ] Commit: "feat: file handle read/write operations"
+- [x] Commit: "feat: file handle read/write operations"
 
 ### Step 5: FileSystemDirectoryHandle Operations
 **Goal**: Implement directory traversal and manipulation methods.
@@ -185,10 +185,10 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 - [x] JS bridge: directory operation functions
 - [x] Unit tests (browserless):
   - Options records defaults
-- [ ] Integration test (Playwright):
+- [x] Integration test (Playwright):
   - OPFS-based test: get root directory, create subdirectory, create file,
     list entries, resolve paths, remove entries
-- [ ] Commit: "feat: directory handle operations"
+- [x] Commit: "feat: directory handle operations"
 
 ### Step 6: Error Handling and Edge Cases
 **Goal**: Robust error handling, browser support detection, and handle lifecycle.
@@ -209,8 +209,8 @@ detailed sub-plan for that step, and wait for your approval before writing code.
   - `FileSystemHandle.release()` to remove from client-side registry
   - Auto-cleanup on component detach (via detach listener in `JsBridge`)
 - [x] Unit tests: exception mapping logic
-- [ ] Integration test: verify error scenarios (access non-existent file, etc.)
-- [ ] Commit: "feat: error handling and handle lifecycle"
+- [x] Integration test: verify error scenarios (access non-existent file, etc.)
+- [x] Commit: "feat: error handling and handle lifecycle"
 
 ### Step 7: UploadHandler and DownloadHandler Integration
 **Goal**: Leverage Vaadin's `UploadHandler` and `DownloadHandler` for efficient large-file
@@ -233,15 +233,15 @@ use HTTP streaming, which is far more efficient and supports progress tracking.
   - Supports `DownloadHandler` progress tracking out of the box
   - Complementary to `write(byte[])` (which remains for small payloads)
 - [x] Update demo view with large-file upload/download examples
-- [ ] Unit tests for integration helper methods
-- [ ] Integration test (OPFS-based): upload file content to server via `UploadHandler`,
+- [x] Unit tests for integration helper methods
+- [x] Integration test (OPFS-based): upload file content to server via `UploadHandler`,
   download content from `DownloadHandler` into OPFS file, verify round-trip
-- [ ] Commit: "feat: `UploadHandler` and `DownloadHandler` integration for streaming transfers"
+- [x] Commit: "feat: `UploadHandler` and `DownloadHandler` integration for streaming transfers"
 
 ### Step 8: Documentation and README
 **Goal**: Comprehensive documentation for users and contributors.
 
-- [ ] `README.md` with sections:
+- [x] `README.md` with sections:
   - Project description and motivation
   - Browser compatibility (Chromium-based browsers; Firefox/Safari partial support)
   - Maven dependency coordinates
@@ -257,20 +257,20 @@ use HTTP streaming, which is far more efficient and supports progress tracking.
   - Running tests (`mvn test` for unit, `mvn verify -Pit` for integration)
   - Contributing guidelines
   - License (Apache 2.0)
-- [ ] Javadoc on all public classes, methods, and enums
-- [ ] Commit: "docs: README, Javadoc, and usage examples"
+- [x] Javadoc on all public classes, methods, and enums
+- [x] Commit: "docs: README, Javadoc, and usage examples"
 
 ### Step 9: Polish and Release Preparation
 **Goal**: Final cleanup, full test pass, CI readiness.
 
-- [ ] Run full test suite: `mvn verify -Pit`
-- [ ] Run `mvn spotless:check` to ensure consistent formatting
-- [ ] Review all public API surface for consistency, naming, and usability
-- [ ] Verify `pom.xml` metadata (description, SCM URL, developer info, license)
-- [ ] Ensure assembly descriptor is updated for the new project
-- [ ] Clean up any TODO comments or placeholder code
-- [ ] Final Spotless formatting pass
-- [ ] Commit: "chore: polish and release preparation"
+- [x] Run full test suite: `mvn verify -Pit`
+- [x] Run `mvn spotless:check` to ensure consistent formatting
+- [x] Review all public API surface for consistency, naming, and usability
+- [x] Verify `pom.xml` metadata (description, SCM URL, developer info, license)
+- [x] Ensure assembly descriptor is updated for the new project
+- [x] Clean up any TODO comments or placeholder code
+- [x] Final Spotless formatting pass
+- [x] Commit: "chore: polish and release preparation"
 
 **Note**: The plan now has 9 steps. Steps 1–6 cover the core File System API,
 Step 7 adds Vaadin handler integration for efficient large-file transfer,
