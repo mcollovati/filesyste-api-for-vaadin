@@ -95,7 +95,7 @@ class JsBridge implements Serializable {
     boolean initialized;
     private Registration detachRegistration;
 
-    private JsBridge(Component component) {
+    JsBridge(Component component) {
         this.component = component;
     }
 
