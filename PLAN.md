@@ -121,54 +121,27 @@ detailed sub-plan for that step, and wait for your approval before writing code.
 ### Step 2: Core Handle Interfaces and Client-Side Registry
 **Goal**: Implement the handle type hierarchy and the JS-side handle registry.
 
-- [ ] Create client-side JS module (`filesystem-api.js`) in `src/main/resources/META-INF/resources/frontend/`:
-  - Handle registry: `Map<string, FileSystemHandle>`
-  - Functions: `registerHandle(handle) -> id`, `getHandle(id)`, `releaseHandle(id)`
-  - Writable stream registry: `Map<string, FileSystemWritableFileStream>`
-  - Expose via `window.Vaadin.filesystemApi` namespace
-- [ ] Create Java enums:
-  - `HandleKind` (`FILE`, `DIRECTORY`)
-  - `PermissionMode` (`READ`, `READWRITE`)
-  - `PermissionState` (`GRANTED`, `DENIED`, `PROMPT`)
-- [ ] Create Java `FileSystemHandle` sealed interface:
-  - `getKind()`, `getName()`
-  - `isSameEntry(FileSystemHandle other)` -> `CompletableFuture<Boolean>`
-  - `queryPermission(PermissionMode)` -> `CompletableFuture<PermissionState>`
-  - `requestPermission(PermissionMode)` -> `CompletableFuture<PermissionState>`
-- [ ] Create `FileSystemFileHandle` implementing `FileSystemHandle`
-- [ ] Create `FileSystemDirectoryHandle` implementing `FileSystemHandle`
-- [ ] Internal `JsBridge` class: centralizes `UI.getPage().executeJs(...)` calls
-  and manages handle-to-ID mapping
-- [ ] Unit tests (browserless):
-  - Enum value/serialization tests
-  - Handle kind and name accessors
-- [ ] Commit: "feat: core handle interfaces and client-side registry"
+- [x] Handle registry stored on host component's DOM element via `Element.executeJs` (no JS module, no hidden elements, no globals)
+- [x] Create Java enums: `HandleKind`, `PermissionMode`, `PermissionState`
+- [x] Create Java `FileSystemHandle` sealed interface with `AbstractFileSystemHandle` base class
+- [x] Create `FileSystemFileHandle` and `FileSystemDirectoryHandle`
+- [x] `JsBridge` package-private utility class (singleton per component via `ComponentUtil.setData`)
+- [x] `FileSystemAPI` instance-based entry point bound to any `Component`
+- [x] Unit tests for enums
+- [x] Commit: "feat: core handle interfaces and client-side registry"
 
 ### Step 3: File Picker Methods
 **Goal**: Implement `showOpenFilePicker`, `showSaveFilePicker`, `showDirectoryPicker`.
 
-- [ ] Create options records:
-  - `FileTypeFilter(String description, Map<String, List<String>> accept)`
-  - `OpenFilePickerOptions` with builder: `types`, `excludeAcceptAllOption`, `multiple`, `startIn`
-  - `SaveFilePickerOptions` with builder: `types`, `excludeAcceptAllOption`, `suggestedName`, `startIn`
-  - `DirectoryPickerOptions` with builder: `startIn`, `mode`
-- [ ] Create `FileSystemAPI` entry-point class with static methods:
-  - `showOpenFilePicker(UI, OpenFilePickerOptions)` -> `CompletableFuture<List<FileSystemFileHandle>>`
-  - `showSaveFilePicker(UI, SaveFilePickerOptions)` -> `CompletableFuture<FileSystemFileHandle>`
-  - `showDirectoryPicker(UI, DirectoryPickerOptions)` -> `CompletableFuture<FileSystemDirectoryHandle>`
-  - Convenience overloads without options (use defaults)
-  - `isSupported(UI)` -> `CompletableFuture<Boolean>`
-- [ ] JS module: picker invocation functions that call `window.showOpenFilePicker()` etc.,
-  register resulting handles, and return handle IDs to the server
-- [ ] Options-to-JSON serialization in `JsBridge`
-- [ ] Unit tests (browserless):
-  - Options builder defaults and validation
-  - Options serialization to JSON
-- [ ] Integration test (Playwright):
-  - Test view with buttons triggering each picker
-  - Verify `isSupported()` returns `true` in Chromium
-  - Test user cancellation handling (pickers throw `AbortError`)
-- [ ] Commit: "feat: file and directory picker methods"
+- [x] Create options classes with builders: `OpenFilePickerOptions`, `SaveFilePickerOptions`, `DirectoryPickerOptions`
+- [x] Create `FileTypeFilter` record
+- [x] Add picker instance methods to `FileSystemAPI` with convenience overloads
+- [x] Options passed as Jackson-serializable objects directly to `executeJs` (no manual JSON building)
+- [x] JS handle registration with `startIn` handle resolution in `JsBridge`
+- [x] `@JsonValue` on `PermissionMode.getJsValue()` for proper serialization
+- [x] Unit tests for options builders
+- [ ] Integration test (Playwright): `isSupported()`, picker error handling (deferred to Step 6)
+- [x] Commit: "feat: file and directory picker methods"
 
 ### Step 4: FileSystemFileHandle Operations
 **Goal**: Implement `getFile()` and `createWritable()` with read/write capabilities.
