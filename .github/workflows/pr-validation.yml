@@ -85,10 +85,10 @@ jobs:
             TESTS=0; FAILURES=0; ERRORS=0; SKIPPED=0
             for XML in "$DIR"/TEST-*.xml; do
               [ -f "$XML" ] || continue
-              TESTS=$((TESTS + $(grep -oP '(?<=tests=")[^"]+' "$XML" | head -1)))
-              FAILURES=$((FAILURES + $(grep -oP '(?<=failures=")[^"]+' "$XML" | head -1)))
-              ERRORS=$((ERRORS + $(grep -oP '(?<=errors=")[^"]+' "$XML" | head -1)))
-              SKIPPED=$((SKIPPED + $(grep -oP '(?<=skipped=")[^"]+' "$XML" | head -1)))
+              TESTS=$((TESTS + $(grep -c '<testcase' "$XML")))
+              FAILURES=$((FAILURES + $(grep -c '<failure' "$XML")))
+              ERRORS=$((ERRORS + $(grep -c '<error message=' "$XML")))
+              SKIPPED=$((SKIPPED + $(grep -c '<skipped' "$XML")))
             done
             ICON="✅"; [ "$FAILURES" -gt 0 ] || [ "$ERRORS" -gt 0 ] && ICON="❌"
             echo "${ICON} **${MODULE}**: ${TESTS} tests, ${FAILURES} failures, ${ERRORS} errors, ${SKIPPED} skipped" >> "$GITHUB_STEP_SUMMARY"
@@ -143,10 +143,10 @@ jobs:
             TESTS=0; FAILURES=0; ERRORS=0; SKIPPED=0
             for XML in "$DIR"/TEST-*.xml; do
               [ -f "$XML" ] || continue
-              TESTS=$((TESTS + $(grep -oP '(?<=tests=")[^"]+' "$XML" | head -1)))
-              FAILURES=$((FAILURES + $(grep -oP '(?<=failures=")[^"]+' "$XML" | head -1)))
-              ERRORS=$((ERRORS + $(grep -oP '(?<=errors=")[^"]+' "$XML" | head -1)))
-              SKIPPED=$((SKIPPED + $(grep -oP '(?<=skipped=")[^"]+' "$XML" | head -1)))
+              TESTS=$((TESTS + $(grep -c '<testcase' "$XML")))
+              FAILURES=$((FAILURES + $(grep -c '<failure' "$XML")))
+              ERRORS=$((ERRORS + $(grep -c '<error message=' "$XML")))
+              SKIPPED=$((SKIPPED + $(grep -c '<skipped' "$XML")))
             done
             ICON="✅"; [ "$FAILURES" -gt 0 ] || [ "$ERRORS" -gt 0 ] && ICON="❌"
             echo "${ICON} ${TESTS} tests, ${FAILURES} failures, ${ERRORS} errors, ${SKIPPED} skipped" >> "$GITHUB_STEP_SUMMARY"
