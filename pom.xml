@@ -19,7 +19,7 @@
 
     <properties>
         <vaadin.version>25.1.0-beta1</vaadin.version>
-        <junit.version>6.0.1</junit.version>
+        <junit.version>6.0.3</junit.version>
         <browserless-test.version>1.0.0-beta1</browserless-test.version>
         <playwright.version>1.58.0</playwright.version>
         <jetty.version>12.1.5</jetty.version>
