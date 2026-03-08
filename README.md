@@ -129,7 +129,7 @@ mvn verify -Pit
 mvn spotless:apply
 
 # Build for Vaadin Directory
-mvn install -Pdirectory -pl addon
+mvn install -Pdirectory -pl filesystem-api
 ```
 
 ## License

@@ -12,7 +12,7 @@
     <description>Vaadin add-on providing Java API for the browser File System API</description>
 
     <modules>
-        <module>addon</module>
+        <module>filesystem-api</module>
         <module>filesystem-api-browserless</module>
         <module>integration-tests</module>
     </modules>

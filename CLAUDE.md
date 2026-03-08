@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Vaadin add-on providing a Java API for the browser's File System API. Multimodule Maven project (Java 21, Vaadin 25.1).
 
-- `addon/` — the publishable library JAR (`artifactId: filesystem-api`)
+- `filesystem-api/` — the publishable library JAR (`artifactId: filesystem-api`)
 - `integration-tests/` — demo views, Jetty runner, Playwright tests (`artifactId: filesystem-api-integration-tests`)
 
 Package: `com.github.mcollovati.vaadin.filesystem`
@@ -18,8 +18,8 @@ mvn clean verify              # compile both modules, run unit tests
 mvn spotless:apply             # format all Java files (palantir-java-format)
 mvn spotless:check             # check formatting without modifying
 
-# Run a single unit test (in addon module)
-mvn -pl addon test -Dtest=HandleKindTest
+# Run a single unit test (in filesystem-api module)
+mvn -pl filesystem-api test -Dtest=HandleKindTest
 
 # Start demo app on port 8080
 cd integration-tests && mvn jetty:run
@@ -28,7 +28,7 @@ cd integration-tests && mvn jetty:run
 mvn verify -Pit
 
 # Build for Vaadin Directory release
-mvn install -Pdirectory -pl addon
+mvn install -Pdirectory -pl filesystem-api
 ```
 
 ## Architecture
@@ -58,7 +58,7 @@ Client-side handle registry: JS `Map` stored on the host component's DOM element
 
 ## Testing
 
-- **Unit tests** (`addon/src/test/`): JUnit Jupiter. Some tests extend `BrowserlessTest` with `@ViewPackages` from `browserless-test-junit6`.
+- **Unit tests** (`filesystem-api/src/test/`): JUnit Jupiter. Some tests extend `BrowserlessTest` with `@ViewPackages` from `browserless-test-junit6`.
 - **Integration tests** (`integration-tests/src/test/`): `*IT.java` naming, Playwright + Jetty, activated via `-Pit` profile. OPFS-based tests avoid native file picker dialogs.
 
 ## Conventions
