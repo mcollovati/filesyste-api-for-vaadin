@@ -15,6 +15,8 @@
  */
 package com.github.mcollovati.vaadin.filesystem.demo;
 
+import com.github.mcollovati.vaadin.filesystem.demo.contactmanager.ContactManagerDemoView;
+import com.github.mcollovati.vaadin.filesystem.demo.imagecatalog.ImageCatalogDemoView;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.html.H1;
@@ -63,6 +65,11 @@ public class MainLayout extends AppLayout {
         callback.addItem(new SideNavItem(
                 "Streaming", com.github.mcollovati.vaadin.filesystem.demo.callback.StreamingDemoView.class));
         nav.addItem(callback);
+
+        var examples = new SideNavItem("Examples");
+        examples.addItem(new SideNavItem("Contact Manager", ContactManagerDemoView.class));
+        examples.addItem(new SideNavItem("Image Catalog", ImageCatalogDemoView.class));
+        nav.addItem(examples);
 
         return nav;
     }

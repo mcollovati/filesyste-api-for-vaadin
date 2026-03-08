@@ -40,7 +40,7 @@ public class StreamingDemoView extends AbstractDemoView {
     }
 
     @Override
-    String codeSnippet() {
+    protected String codeSnippet() {
         return """
                 // Upload: pick file + stream to server in one call
                 var handler = UploadHandler.inMemory(
@@ -55,7 +55,7 @@ public class StreamingDemoView extends AbstractDemoView {
     }
 
     @Override
-    void addActions() {
+    protected void addActions() {
         var upload = new Button("Upload File to Server", e -> onUpload());
         var download = new Button("Download Content to File", e -> onDownload());
         add(new HorizontalLayout(upload, download));

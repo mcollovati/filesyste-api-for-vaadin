@@ -49,7 +49,7 @@ public class FilePickerDemoView extends AbstractDemoView {
     }
 
     @Override
-    String codeSnippet() {
+    protected String codeSnippet() {
         return """
                 // Open and read a single file
                 fs.openFile().thenAccept(fileData ->
@@ -68,7 +68,7 @@ public class FilePickerDemoView extends AbstractDemoView {
     }
 
     @Override
-    void addActions() {
+    protected void addActions() {
         var openFile = new Button("Open File", e -> onOpenFile());
         var openMultiple = new Button("Open Multiple", e -> onOpenMultiple());
         var openImages = new Button("Open Images", e -> onOpenImages());

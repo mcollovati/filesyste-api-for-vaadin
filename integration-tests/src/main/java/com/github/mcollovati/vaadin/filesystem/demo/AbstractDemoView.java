@@ -25,12 +25,12 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 /**
  * Base class for high-level API demo views.
  */
-abstract class AbstractDemoView extends VerticalLayout {
+public abstract class AbstractDemoView extends VerticalLayout {
 
     private final FileSystemAPI fs;
     private final Pre log;
 
-    AbstractDemoView(String title, String description) {
+    protected AbstractDemoView(String title, String description) {
         fs = new FileSystemAPI(this);
         log = new Pre();
         log.getStyle()
@@ -51,29 +51,29 @@ abstract class AbstractDemoView extends VerticalLayout {
         add(log);
     }
 
-    FileSystemAPI fs() {
+    protected FileSystemAPI fs() {
         return fs;
     }
 
-    abstract String codeSnippet();
+    protected abstract String codeSnippet();
 
-    abstract void addActions();
+    protected abstract void addActions();
 
-    void appendLog(String message) {
+    protected void appendLog(String message) {
         getUI().ifPresent(ui -> ui.access(() -> {
             String current = log.getText();
             log.setText(current + message + "\n");
         }));
     }
 
-    Void logError(Throwable error) {
+    protected Void logError(Throwable error) {
         Throwable cause = error instanceof java.util.concurrent.CompletionException ? error.getCause() : error;
         String type = cause.getClass().getSimpleName();
         appendLog(type + ": " + cause.getMessage());
         return null;
     }
 
-    void addContent(Component... components) {
+    protected void addContent(Component... components) {
         for (var component : components) {
             addComponentAtIndex(getComponentCount() - 2, component);
         }

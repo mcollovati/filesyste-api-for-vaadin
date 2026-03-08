@@ -36,7 +36,7 @@ public class WriteFileDemoView extends AbstractDemoView {
     }
 
     @Override
-    String codeSnippet() {
+    protected String codeSnippet() {
         return """
                 var opts = SaveFilePickerOptions.builder()
                         .suggestedName("hello.txt")
@@ -48,7 +48,7 @@ public class WriteFileDemoView extends AbstractDemoView {
     }
 
     @Override
-    void addActions() {
+    protected void addActions() {
         var writeText = new Button("Write Text", e -> onWriteText());
         var writeBytes = new Button("Write Bytes", e -> onWriteBytes());
         add(new HorizontalLayout(writeText, writeBytes));

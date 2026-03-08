@@ -35,7 +35,7 @@ public class ReadFileDemoView extends AbstractDemoView {
     }
 
     @Override
-    String codeSnippet() {
+    protected String codeSnippet() {
         return """
                 fs.openFile().thenAccept(fileData -> {
                     String name = fileData.getName();
@@ -47,7 +47,7 @@ public class ReadFileDemoView extends AbstractDemoView {
     }
 
     @Override
-    void addActions() {
+    protected void addActions() {
         add(new Button("Read File Content", e -> onReadFile()));
     }
 

@@ -38,7 +38,7 @@ public class DirectoryDemoView extends AbstractDemoView {
     }
 
     @Override
-    String codeSnippet() {
+    protected String codeSnippet() {
         return """
                 // Open and get a directory handle
                 fs.openDirectory().thenAccept(dir -> { ... });
@@ -54,7 +54,7 @@ public class DirectoryDemoView extends AbstractDemoView {
     }
 
     @Override
-    void addActions() {
+    protected void addActions() {
         var openDir = new Button("Open Directory", e -> onOpenDirectory());
         var listDir = new Button("List Directory", e -> onListDirectory());
         add(new HorizontalLayout(openDir, listDir));
