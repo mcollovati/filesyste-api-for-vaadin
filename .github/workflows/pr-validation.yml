@@ -41,7 +41,7 @@ jobs:
           cache: maven
 
       - name: Build (skip tests)
-        run: mvn clean install -DskipTests -B
+        run: mvn clean install -DskipTests -ntp -B
 
       - name: Upload workspace
         uses: actions/upload-artifact@v4
@@ -73,7 +73,7 @@ jobs:
           cache: maven
 
       - name: Run unit tests
-        run: mvn -pl filesystem-api,filesystem-api-browserless verify -B
+        run: mvn -pl filesystem-api,filesystem-api-browserless verify -ntp -B
 
       - name: Unit test report summary
         if: always()
@@ -129,10 +129,10 @@ jobs:
           -Dexec.mainClass=com.microsoft.playwright.CLI
           -Dexec.classpathScope=test
           -Dexec.args="install --with-deps chromium"
-          -pl integration-tests -B
+          -pl integration-tests -ntp -B
 
       - name: Run integration tests
-        run: mvn verify -Pit -Dsurefire.skip=true -B
+        run: mvn verify -Pit -Dsurefire.skip=true -ntp -B
 
       - name: Integration test report summary
         if: always()
@@ -183,7 +183,7 @@ jobs:
           cache: maven
 
       - name: Check formatting
-        run: mvn spotless:check -B
+        run: mvn spotless:check -ntp -B
 
   # ── Semver analysis (PR only) ──────────────────────────────────────
   semver-analysis:
@@ -210,7 +210,7 @@ jobs:
       - name: Build base branch JARs
         run: |
           git checkout ${{ github.event.pull_request.base.sha }}
-          mvn -pl "${LIBRARY_MODULES}" package -DskipTests -B -q
+          mvn -pl "${LIBRARY_MODULES}" package -DskipTests -ntp -B -q
           mkdir -p /tmp/baseline
           for MODULE in ${LIBRARY_MODULES//,/ }; do
             cp "${MODULE}"/target/"${MODULE}"-[0-9]*.jar "/tmp/baseline/${MODULE}.jar"
@@ -220,7 +220,7 @@ jobs:
       - name: Build PR head JARs and run japicmp
         run: >-
           mvn -pl "${LIBRARY_MODULES}" clean verify -DskipTests -Psemver
-          -Djapicmp.baseline.dir=/tmp/baseline -B
+          -Djapicmp.baseline.dir=/tmp/baseline -ntp -B
 
       - name: Parse semver level
         id: japicmp
