@@ -78,6 +78,26 @@ public sealed interface FileSystemHandle extends Serializable permits AbstractFi
     CompletableFuture<PermissionState> requestPermission(PermissionMode mode);
 
     /**
+     * Queries the current permission state and, if not already granted,
+     * requests permission from the user.
+     *
+     * <p>This is a convenience method equivalent to calling
+     * {@link #queryPermission(PermissionMode)} followed by
+     * {@link #requestPermission(PermissionMode)} when needed.
+     *
+     * @param mode the permission mode to ensure
+     * @return a future that completes with the resulting permission state
+     * @see #queryPermission(PermissionMode)
+     * @see #requestPermission(PermissionMode)
+     */
+    default CompletableFuture<PermissionState> ensurePermission(PermissionMode mode) {
+        return queryPermission(mode)
+                .thenCompose(state -> state == PermissionState.GRANTED
+                        ? CompletableFuture.completedFuture(state)
+                        : requestPermission(mode));
+    }
+
+    /**
      * Releases this handle, removing it from the client-side registry.
      *
      * <p>After calling this method, the handle should no longer be used
