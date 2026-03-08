@@ -51,4 +51,40 @@ class DirectoryPickerOptionsTest {
                 .build();
         assertEquals("documents", options.getStartIn());
     }
+
+    @Test
+    void rebuildCopiesAllFields() {
+        var original = DirectoryPickerOptions.builder()
+                .startIn("desktop")
+                .mode(PermissionMode.READWRITE)
+                .build();
+
+        var copy = original.rebuild().build();
+
+        assertEquals(original.getStartIn(), copy.getStartIn());
+        assertEquals(original.getMode(), copy.getMode());
+    }
+
+    @Test
+    void rebuildAllowsSelectiveOverride() {
+        var original = DirectoryPickerOptions.builder()
+                .startIn("desktop")
+                .mode(PermissionMode.READ)
+                .build();
+
+        var modified = original.rebuild().mode(PermissionMode.READWRITE).build();
+
+        assertEquals(PermissionMode.READWRITE, modified.getMode());
+        assertEquals("desktop", modified.getStartIn());
+    }
+
+    @Test
+    void rebuildDoesNotMutateOriginal() {
+        var original =
+                DirectoryPickerOptions.builder().mode(PermissionMode.READ).build();
+
+        original.rebuild().mode(PermissionMode.READWRITE).build();
+
+        assertEquals(PermissionMode.READ, original.getMode());
+    }
 }

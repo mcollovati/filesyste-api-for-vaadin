@@ -69,4 +69,44 @@ class SaveFilePickerOptionsTest {
         var options = SaveFilePickerOptions.builder().types(filter).build();
         assertEquals(1, options.getTypes().size());
     }
+
+    @Test
+    void rebuildCopiesAllFields() {
+        var filter = new FileTypeFilter("PDF", Map.of("application/pdf", List.of(".pdf")));
+        var original = SaveFilePickerOptions.builder()
+                .types(List.of(filter))
+                .excludeAcceptAllOption(true)
+                .suggestedName("report.pdf")
+                .startIn("downloads")
+                .build();
+
+        var copy = original.rebuild().build();
+
+        assertEquals(original.getTypes(), copy.getTypes());
+        assertEquals(original.getExcludeAcceptAllOption(), copy.getExcludeAcceptAllOption());
+        assertEquals(original.getSuggestedName(), copy.getSuggestedName());
+        assertEquals(original.getStartIn(), copy.getStartIn());
+    }
+
+    @Test
+    void rebuildAllowsSelectiveOverride() {
+        var original = SaveFilePickerOptions.builder()
+                .suggestedName("old.txt")
+                .startIn("downloads")
+                .build();
+
+        var modified = original.rebuild().suggestedName("new.txt").build();
+
+        assertEquals("new.txt", modified.getSuggestedName());
+        assertEquals("downloads", modified.getStartIn());
+    }
+
+    @Test
+    void rebuildDoesNotMutateOriginal() {
+        var original = SaveFilePickerOptions.builder().suggestedName("old.txt").build();
+
+        original.rebuild().suggestedName("new.txt").build();
+
+        assertEquals("old.txt", original.getSuggestedName());
+    }
 }

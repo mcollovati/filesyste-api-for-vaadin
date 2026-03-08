@@ -89,12 +89,32 @@ public final class SaveFilePickerOptions implements Serializable {
         return new Builder();
     }
 
+    /**
+     * Returns a builder initialized with the values of this instance,
+     * allowing selective overrides.
+     *
+     * @return a pre-populated builder
+     */
+    public Builder rebuild() {
+        return new Builder(this);
+    }
+
     /** Builder for {@link SaveFilePickerOptions}. */
     public static final class Builder {
 
-        private final SaveFilePickerOptions options = new SaveFilePickerOptions();
+        private final SaveFilePickerOptions options;
 
-        private Builder() {}
+        private Builder() {
+            this.options = new SaveFilePickerOptions();
+        }
+
+        private Builder(SaveFilePickerOptions source) {
+            this.options = new SaveFilePickerOptions();
+            this.options.types = source.types;
+            this.options.excludeAcceptAllOption = source.excludeAcceptAllOption;
+            this.options.suggestedName = source.suggestedName;
+            this.options.startIn = source.startIn;
+        }
 
         /**
          * Sets the file type filters.

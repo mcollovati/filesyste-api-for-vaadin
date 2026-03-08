@@ -67,12 +67,30 @@ public final class DirectoryPickerOptions implements Serializable {
         return new Builder();
     }
 
+    /**
+     * Returns a builder initialized with the values of this instance,
+     * allowing selective overrides.
+     *
+     * @return a pre-populated builder
+     */
+    public Builder rebuild() {
+        return new Builder(this);
+    }
+
     /** Builder for {@link DirectoryPickerOptions}. */
     public static final class Builder {
 
-        private final DirectoryPickerOptions options = new DirectoryPickerOptions();
+        private final DirectoryPickerOptions options;
 
-        private Builder() {}
+        private Builder() {
+            this.options = new DirectoryPickerOptions();
+        }
+
+        private Builder(DirectoryPickerOptions source) {
+            this.options = new DirectoryPickerOptions();
+            this.options.startIn = source.startIn;
+            this.options.mode = source.mode;
+        }
 
         /**
          * Sets the starting directory to a well-known directory name.
