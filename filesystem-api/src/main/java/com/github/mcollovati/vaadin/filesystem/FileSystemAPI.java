@@ -57,6 +57,18 @@ public final class FileSystemAPI implements Serializable {
         this.component = component;
     }
 
+    /**
+     * Checks whether the browser supports the File System API.
+     *
+     * @return a future that completes with {@code true} if the File System
+     *         API is available in the browser
+     */
+    public CompletableFuture<Boolean> isSupported() {
+        return getBridge()
+                .executeJs("return typeof window.showOpenFilePicker === 'function';")
+                .toCompletableFuture(Boolean.class);
+    }
+
     // -- Open & Read --
 
     /**
@@ -283,6 +295,15 @@ public final class FileSystemAPI implements Serializable {
      */
     public CompletableFuture<FileSystemDirectoryHandle> getOriginPrivateDirectory() {
         return getBridge().getOriginPrivateDirectory();
+    }
+
+    /**
+     * Returns the component this API instance is bound to.
+     *
+     * @return the bound component, never {@code null}
+     */
+    public Component getComponent() {
+        return component;
     }
 
     // -- Private picker methods (delegate to JsBridge) --

@@ -26,7 +26,8 @@ public class FileSystemSupportTestView extends AbstractOpfsTestView {
     }
 
     private void onCheckSupport() {
-        // TODO: isSupported() not yet available on FileSystemAPI
-        appendLog("supported=unknown");
+        fs().isSupported()
+                .thenAccept(supported -> appendLog("supported=" + supported))
+                .exceptionally(this::logError);
     }
 }

@@ -44,7 +44,7 @@ public final class FileSystemFileHandle extends AbstractFileSystemHandle {
 
     @Override
     public String toString() {
-        return "FileSystemFileHandle{name='" + name() + "'}";
+        return "FileSystemFileHandle{name='" + getName() + "'}";
     }
 
     /**

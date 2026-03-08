@@ -35,8 +35,16 @@ public class FilePickerDemoView extends AbstractDemoView {
                         + "and openFiles(). The high-level API combines picker + read into "
                         + "one step, returning FileData directly.");
 
-        // TODO: isSupported() not yet available on FileSystemAPI
-        var status = new Span("File System API support check not available");
+        var status = new Span("Checking...");
+        fs().isSupported().thenAccept(supported -> getUI().ifPresent(ui -> ui.access(() -> {
+            if (supported) {
+                status.setText("File System API is supported");
+                status.getStyle().set("color", "var(--lumo-success-color)");
+            } else {
+                status.setText("File System API is NOT supported in this browser");
+                status.getStyle().set("color", "var(--lumo-error-color)");
+            }
+        })));
         addContent(status);
     }
 

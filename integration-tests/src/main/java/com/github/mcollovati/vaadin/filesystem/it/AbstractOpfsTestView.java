@@ -53,7 +53,7 @@ abstract class AbstractOpfsTestView extends VerticalLayout {
         return root.entries().thenCompose(entries -> {
             CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
             for (FileSystemHandle entry : entries) {
-                chain = chain.thenCompose(v -> root.removeEntry(entry.name(), RemoveEntryOptions.recursively()));
+                chain = chain.thenCompose(v -> root.removeEntry(entry.getName(), RemoveEntryOptions.recursively()));
             }
             return chain;
         });
