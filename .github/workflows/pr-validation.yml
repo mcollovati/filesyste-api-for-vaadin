@@ -25,6 +25,7 @@ jobs:
   build:
     needs: approve-external
     if: always() && (github.event_name == 'push' || needs.approve-external.result == 'success')
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR code
@@ -55,6 +56,8 @@ jobs:
   # ── Unit tests ──────────────────────────────────────────────────────
   unit-tests:
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - name: Download workspace
@@ -103,6 +106,8 @@ jobs:
   # ── Integration tests ──────────────────────────────────────────────
   integration-tests:
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - name: Download workspace
@@ -162,6 +167,7 @@ jobs:
   format-check:
     if: github.event_name == 'pull_request_target'
     needs: build
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
       - name: Download workspace
@@ -183,6 +189,7 @@ jobs:
   semver-analysis:
     if: github.event_name == 'pull_request_target'
     needs: approve-external
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     env:
       LIBRARY_MODULES: filesystem-api,filesystem-api-browserless
