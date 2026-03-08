@@ -10,6 +10,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
 
   # ── Security gate for external contributors ──────────────────────────
@@ -85,12 +89,12 @@ jobs:
             TESTS=0; FAILURES=0; ERRORS=0; SKIPPED=0
             for XML in "$DIR"/TEST-*.xml; do
               [ -f "$XML" ] || continue
-              TESTS=$((TESTS + $(grep -c '<testcase' "$XML")))
-              FAILURES=$((FAILURES + $(grep -c '<failure' "$XML")))
-              ERRORS=$((ERRORS + $(grep -c '<error message=' "$XML")))
-              SKIPPED=$((SKIPPED + $(grep -c '<skipped' "$XML")))
+              TESTS=$((TESTS + $(grep -c '<testcase' "$XML" || true)))
+              FAILURES=$((FAILURES + $(grep -c '<failure' "$XML" || true)))
+              ERRORS=$((ERRORS + $(grep -c '<error message=' "$XML" || true)))
+              SKIPPED=$((SKIPPED + $(grep -c '<skipped' "$XML" || true)))
             done
-            ICON="✅"; [ "$FAILURES" -gt 0 ] || [ "$ERRORS" -gt 0 ] && ICON="❌"
+            ICON="✅"; ([ "$FAILURES" -gt 0 ] || [ "$ERRORS" -gt 0 ]) && ICON="❌"
             echo "${ICON} **${MODULE}**: ${TESTS} tests, ${FAILURES} failures, ${ERRORS} errors, ${SKIPPED} skipped" >> "$GITHUB_STEP_SUMMARY"
           done
 
@@ -143,12 +147,12 @@ jobs:
             TESTS=0; FAILURES=0; ERRORS=0; SKIPPED=0
             for XML in "$DIR"/TEST-*.xml; do
               [ -f "$XML" ] || continue
-              TESTS=$((TESTS + $(grep -c '<testcase' "$XML")))
-              FAILURES=$((FAILURES + $(grep -c '<failure' "$XML")))
-              ERRORS=$((ERRORS + $(grep -c '<error message=' "$XML")))
-              SKIPPED=$((SKIPPED + $(grep -c '<skipped' "$XML")))
+              TESTS=$((TESTS + $(grep -c '<testcase' "$XML" || true)))
+              FAILURES=$((FAILURES + $(grep -c '<failure' "$XML" || true)))
+              ERRORS=$((ERRORS + $(grep -c '<error message=' "$XML" || true)))
+              SKIPPED=$((SKIPPED + $(grep -c '<skipped' "$XML" || true)))
             done
-            ICON="✅"; [ "$FAILURES" -gt 0 ] || [ "$ERRORS" -gt 0 ] && ICON="❌"
+            ICON="✅"; ([ "$FAILURES" -gt 0 ] || [ "$ERRORS" -gt 0 ]) && ICON="❌"
             echo "${ICON} ${TESTS} tests, ${FAILURES} failures, ${ERRORS} errors, ${SKIPPED} skipped" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "⚠️ No failsafe reports found" >> "$GITHUB_STEP_SUMMARY"
@@ -306,6 +310,7 @@ jobs:
           gh pr edit "$PR_NUMBER" --add-label "semver:${SEMVER_LEVEL}"
 
       - name: Post or update PR comment
+        if: steps.japicmp.outputs.level == 'major' || steps.japicmp.outputs.level == 'minor'
         uses: actions/github-script@v7
         env:
           SEMVER_LEVEL: ${{ steps.japicmp.outputs.level }}
