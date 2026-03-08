@@ -15,6 +15,8 @@
  */
 package com.github.mcollovati.vaadin.filesystem;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -45,7 +47,13 @@ public final class FileData implements Serializable {
      *                     since the Unix epoch
      * @param content      the raw file content
      */
-    public FileData(String name, long size, String type, long lastModified, byte[] content) {
+    @JsonCreator
+    public FileData(
+            @JsonProperty("name") String name,
+            @JsonProperty("size") long size,
+            @JsonProperty("type") String type,
+            @JsonProperty("lastModified") long lastModified,
+            @JsonProperty("content") byte[] content) {
         this.name = name;
         this.size = size;
         this.type = type;

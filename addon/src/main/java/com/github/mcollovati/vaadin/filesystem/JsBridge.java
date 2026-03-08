@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicLong;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Internal bridge between Java and browser JavaScript for File System API
@@ -338,13 +339,13 @@ class JsBridge implements Serializable {
                                 return {name: file.name, size: file.size, type: file.type,
                                     lastModified: file.lastModified, content: btoa(binary)};"""),
                         handleId)
-                .toCompletableFuture(new TypeReference<FileInfo>() {})
-                .thenApply(info -> new FileData(
-                        info.name(),
-                        info.size(),
-                        info.type(),
-                        info.lastModified(),
-                        Base64.getDecoder().decode(info.content()))));
+                .toCompletableFuture(JsonNode.class)
+                .thenApply(node -> new FileData(
+                        node.path("name").textValue(),
+                        node.path("size").longValue(),
+                        node.path("type").textValue(),
+                        node.path("lastModified").longValue(),
+                        Base64.getDecoder().decode(node.path("content").textValue()))));
     }
 
     CompletableFuture<FileSystemWritableFileStream> createWritable(String handleId, WritableOptions options) {
