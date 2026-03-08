@@ -92,7 +92,7 @@ class FileSystemTesterTest {
                 new NativeButton("List", e -> fs.listDirectory().thenAccept(entries -> {
                     entryCount.setText(String.valueOf(entries.size()));
                     listing.setText(entries.stream()
-                            .map(h -> h.getName() + ":" + h.getKind().getJsValue())
+                            .map(h -> h.name() + ":" + h.getKind().getJsValue())
                             .reduce("", (a, b) -> a.isEmpty() ? b : a + "," + b));
                 }));
 
@@ -108,7 +108,7 @@ class FileSystemTesterTest {
         final Span result = new Span();
         final NativeButton createDirBtn = new NativeButton("Create Dir", e -> fs.getOriginPrivateDirectory()
                 .thenCompose(root -> root.getDirectoryHandle(targetName.getValue(), GetHandleOptions.creating()))
-                .thenAccept(dir -> result.setText("created:" + dir.getName())));
+                .thenAccept(dir -> result.setText("created:" + dir.name())));
         final NativeButton removeBtn = new NativeButton("Remove", e -> fs.getOriginPrivateDirectory()
                 .thenCompose(root -> root.removeEntry(targetName.getValue()))
                 .thenAccept(v -> result.setText("removed")));

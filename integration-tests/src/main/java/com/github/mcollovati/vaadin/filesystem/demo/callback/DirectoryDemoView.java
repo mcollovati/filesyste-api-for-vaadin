@@ -42,7 +42,7 @@ public class DirectoryDemoView extends AbstractCallbackDemoView {
         return """
                 // Open and get a directory handle
                 fs.openDirectory(
-                    dir -> log(dir.getName()),
+                    dir -> log(dir.name()),
                     error -> log(error.getMessage()));
 
                 // List entries in one step
@@ -50,7 +50,7 @@ public class DirectoryDemoView extends AbstractCallbackDemoView {
                         .mode(PermissionMode.READWRITE).build();
                 fs.listDirectory(opts,
                     entries -> entries.forEach(e ->
-                        log(e.getKind() + ": " + e.getName())),
+                        log(e.getKind() + ": " + e.name())),
                     error -> log(error.getMessage()));""";
     }
 
@@ -63,7 +63,7 @@ public class DirectoryDemoView extends AbstractCallbackDemoView {
 
     private void onOpenDirectory() {
         fs().openDirectory(
-                        handle -> appendLog("Opened: " + handle.getName() + " (" + handle.getKind() + ")"),
+                        handle -> appendLog("Opened: " + handle.name() + " (" + handle.getKind() + ")"),
                         this::logError);
     }
 
@@ -80,7 +80,7 @@ public class DirectoryDemoView extends AbstractCallbackDemoView {
         }
         appendLog("Directory entries:");
         for (var entry : entries) {
-            appendLog("  " + entry.getKind() + ": " + entry.getName());
+            appendLog("  " + entry.getKind() + ": " + entry.name());
         }
     }
 }

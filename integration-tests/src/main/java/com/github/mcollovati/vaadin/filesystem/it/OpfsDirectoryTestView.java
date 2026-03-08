@@ -39,7 +39,7 @@ public class OpfsDirectoryTestView extends AbstractOpfsTestView {
                         .thenCompose(d -> root.entries()))
                 .thenAccept(entries -> {
                     String names = entries.stream()
-                            .map(h -> h.getName() + "(" + h.getKind() + ")")
+                            .map(h -> h.name() + "(" + h.getKind() + ")")
                             .sorted()
                             .collect(Collectors.joining(", "));
                     appendLog("entries=" + names);

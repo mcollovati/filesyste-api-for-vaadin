@@ -48,7 +48,7 @@ public class DirectoryDemoView extends AbstractDemoView {
                         .mode(PermissionMode.READWRITE).build();
                 fs.listDirectory(opts).thenAccept(entries -> {
                     for (var entry : entries) {
-                        log(entry.getKind() + ": " + entry.getName());
+                        log(entry.getKind() + ": " + entry.name());
                     }
                 });""";
     }
@@ -62,7 +62,7 @@ public class DirectoryDemoView extends AbstractDemoView {
 
     private void onOpenDirectory() {
         fs().openDirectory()
-                .thenAccept(handle -> appendLog("Opened: " + handle.getName() + " (" + handle.getKind() + ")"))
+                .thenAccept(handle -> appendLog("Opened: " + handle.name() + " (" + handle.getKind() + ")"))
                 .exceptionally(this::logError);
     }
 
@@ -79,7 +79,7 @@ public class DirectoryDemoView extends AbstractDemoView {
         }
         appendLog("Directory entries:");
         for (var entry : entries) {
-            appendLog("  " + entry.getKind() + ": " + entry.getName());
+            appendLog("  " + entry.getKind() + ": " + entry.name());
         }
     }
 }
