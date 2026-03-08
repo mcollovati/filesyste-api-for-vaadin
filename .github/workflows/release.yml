@@ -3,6 +3,7 @@
 # Triggered manually via workflow_dispatch. Supports dry-run mode for testing.
 #
 # Required secrets:
+#   JRELEASER_GPG_PUBLIC_KEY          — ASCII-armored PGP public key
 #   JRELEASER_GPG_SECRET_KEY          — ASCII-armored PGP private key
 #   JRELEASER_GPG_PASSPHRASE          — passphrase for the PGP key
 #   JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME — Maven Central token username
@@ -57,7 +58,7 @@ jobs:
             exit 1
           }
 
-          POM_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          POM_VERSION=$(mvn -ntp help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "POM version: ${POM_VERSION}"
 
           BASE_VERSION="${POM_VERSION%-SNAPSHOT}"
@@ -96,28 +97,29 @@ jobs:
           fi
 
       - name: Set release version
-        run: mvn versions:set -DnewVersion=${{ inputs.version }} -DgenerateBackupPoms=false -B
+        run: mvn -ntp versions:set -DnewVersion=${{ inputs.version }} -DgenerateBackupPoms=false -B
 
       - name: Build and verify
-        run: mvn verify -B
+        run: mvn -ntp verify -B
 
       - name: Deploy to local staging
-        run: mvn deploy -Prelease -DskipTests -B
+        run: mvn -ntp deploy -Prelease -DskipTests -B
 
       - name: Run JReleaser
         env:
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
-          JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME }}
-          JRELEASER_MAVENCENTRAL_SONATYPE_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_PASSWORD }}
+          JRELEASER_MAVENCENTRAL_RELEASE_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_USERNAME }}
+          JRELEASER_MAVENCENTRAL_RELEASE_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_SONATYPE_PASSWORD }}
         run: |
           DRY_RUN_FLAG=""
           if [ "${{ inputs.dry-run }}" = "true" ]; then
             echo "::warning::DRY RUN mode — no artifacts will be published, no tags or releases will be created"
             DRY_RUN_FLAG="-Djreleaser.dry.run=true"
           fi
-          mvn -N jreleaser:full-release -Prelease ${DRY_RUN_FLAG} -B
+          mvn -ntp -N jreleaser:full-release -Prelease ${DRY_RUN_FLAG} -B
 
       - name: Upload JReleaser output
         if: always()
