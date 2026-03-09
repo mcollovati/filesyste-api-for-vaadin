@@ -31,12 +31,11 @@ public class OpfsDirectoryTestView extends AbstractOpfsTestView {
     }
 
     private void onSetupAndList() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("a.txt", GetHandleOptions.creating())
-                        .thenCompose(f -> root.getFileHandle("b.txt", GetHandleOptions.creating()))
-                        .thenCompose(f -> root.getDirectoryHandle("subdir", GetHandleOptions.creating()))
-                        .thenCompose(d -> root.entries()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("a.txt", GetHandleOptions.creating()))
+                .thenCompose(f -> opfs().getFileHandle("b.txt", GetHandleOptions.creating()))
+                .thenCompose(f -> opfs().getDirectoryHandle("subdir", GetHandleOptions.creating()))
+                .thenCompose(d -> opfs().list())
                 .thenAccept(entries -> {
                     String names = entries.stream()
                             .map(h -> h.getName() + "(" + h.getKind() + ")")
@@ -49,8 +48,8 @@ public class OpfsDirectoryTestView extends AbstractOpfsTestView {
     }
 
     private void onResolvePath() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
+        opfs().clear()
+                .thenCompose(v -> opfs().root())
                 .thenCompose(root -> root.getDirectoryHandle("sub", GetHandleOptions.creating())
                         .thenCompose(sub -> sub.getFileHandle("deep.txt", GetHandleOptions.creating())
                                 .thenCompose(root::resolve)))
@@ -59,23 +58,20 @@ public class OpfsDirectoryTestView extends AbstractOpfsTestView {
     }
 
     private void onRemoveEntry() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("to-delete.txt", GetHandleOptions.creating())
-                        .thenCompose(f -> root.removeEntry("to-delete.txt"))
-                        .thenCompose(v -> root.entries()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("to-delete.txt", GetHandleOptions.creating()))
+                .thenCompose(f -> opfs().removeEntry("to-delete.txt"))
+                .thenCompose(v -> opfs().list())
                 .thenAccept(entries -> appendLog("after-remove-count=" + entries.size()))
                 .exceptionally(this::logError);
     }
 
     private void onCreateNested() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getDirectoryHandle("level1", GetHandleOptions.creating())
-                        .thenCompose(l1 -> l1.getDirectoryHandle("level2", GetHandleOptions.creating()))
-                        .thenCompose(l2 -> l2.getFileHandle("nested.txt", GetHandleOptions.creating()))
-                        .thenCompose(file -> file.writeString("nested content").thenApply(v -> file))
-                        .thenCompose(file -> root.resolve(file)))
+        opfs().clear()
+                .thenCompose(v -> opfs().writeFile("level1/level2/nested.txt", "nested content"))
+                .thenCompose(v -> opfs().root())
+                .thenCompose(
+                        root -> opfs().getFileHandle("level1/level2/nested.txt").thenCompose(root::resolve))
                 .thenAccept(path -> appendLog("nested-path=" + path.orElse(null)))
                 .exceptionally(this::logError);
     }

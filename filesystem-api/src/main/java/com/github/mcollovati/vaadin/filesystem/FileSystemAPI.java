@@ -27,8 +27,10 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>Provides convenient high-level methods that combine picker dialogs
  * with follow-up operations (read, write, stream) so that common
- * workflows can be expressed in a single call, as well as lower-level
- * access to the Origin Private File System (OPFS).
+ * workflows can be expressed in a single call.
+ *
+ * <p>For Origin Private File System (OPFS) access, use
+ * {@link OriginPrivateFileSystem} instead.
  *
  * <pre>{@code
  * var fs = new FileSystemAPI(myView);
@@ -278,23 +280,6 @@ public final class FileSystemAPI implements Serializable {
      */
     public CompletableFuture<List<FileSystemHandle>> listDirectory(DirectoryPickerOptions options) {
         return showDirectoryPicker(options).thenCompose(FileSystemDirectoryHandle::entries);
-    }
-
-    // -- OPFS --
-
-    /**
-     * Returns a handle to the origin private file system (OPFS) root
-     * directory.
-     *
-     * <p>OPFS is a sandboxed file system private to the page's origin,
-     * accessed via {@code navigator.storage.getDirectory()}. Unlike the
-     * picker methods, this does not show a dialog and does not require
-     * user interaction.
-     *
-     * @return a future that completes with the OPFS root directory handle
-     */
-    public CompletableFuture<FileSystemDirectoryHandle> getOriginPrivateDirectory() {
-        return getBridge().getOriginPrivateDirectory();
     }
 
     // -- Private picker methods (delegate to JsBridge) --

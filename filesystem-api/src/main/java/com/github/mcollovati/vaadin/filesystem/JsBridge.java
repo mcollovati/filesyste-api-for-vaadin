@@ -223,6 +223,183 @@ class JsBridge implements Serializable {
                 .thenApply(info -> new FileSystemDirectoryHandle(info.id(), info.name(), this)));
     }
 
+    // -- OPFS path-based operations (single roundtrip) --
+
+    /**
+     * JS snippet that navigates from the OPFS root through all segments
+     * of the path in {@code $0}. After execution, {@code dir} holds the
+     * target directory.
+     *
+     * @param dirOptions the JS expression for the options passed to
+     *                   {@code getDirectoryHandle} calls
+     *                   (e.g. {@code "$1"}, {@code "{}"} or
+     *                   {@code "{create:true}"})
+     * @param excludeLeaf if {@code true}, the last segment is skipped
+     *                    (caller handles it as the leaf); if {@code false},
+     *                    all segments are navigated
+     */
+    private static String opfsNavigateSegments(String dirOptions, boolean excludeLeaf) {
+        return """
+                const root = await navigator.storage.getDirectory();
+                const segments = $0.split('/').filter(s => s.length > 0);
+                let dir = root;
+                for (let i = 0; i < segments.length%s; i++) {
+                    dir = await dir.getDirectoryHandle(segments[i], %s);
+                }
+                """
+                .formatted(excludeLeaf ? " - 1" : "", dirOptions);
+    }
+
+    /**
+     * JS snippet that navigates from the OPFS root to the parent of the
+     * last path segment. After execution, {@code dir} holds the parent
+     * directory and {@code leafName} the final path segment.
+     *
+     * @param dirOptions the JS expression for the options passed to
+     *                   intermediate {@code getDirectoryHandle} calls
+     *                   (e.g. {@code "$1"} or {@code "{create:true}"})
+     */
+    private static String opfsNavigateToParent(String dirOptions) {
+        return opfsNavigateSegments(dirOptions, true)
+                + """
+                const leafName = segments[segments.length - 1];
+                """;
+    }
+
+    // opfsNavigateToParent() provides `dir` (parent directory) and
+    // `leafName` (final path segment); REGISTER_SINGLE_HANDLE reads `handle`.
+
+    CompletableFuture<FileSystemFileHandle> opfsGetFileHandle(String path, GetHandleOptions options) {
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(opfsNavigateToParent("$1")
+                                + """
+                                const handle = await dir.getFileHandle(leafName, $1);
+                                """
+                                + REGISTER_SINGLE_HANDLE),
+                        path,
+                        options)
+                .toCompletableFuture(new TypeReference<HandleInfo>() {})
+                .thenApply(info -> new FileSystemFileHandle(info.id(), info.name(), this)));
+    }
+
+    CompletableFuture<FileSystemDirectoryHandle> opfsGetDirectoryHandle(String path, GetHandleOptions options) {
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(opfsNavigateToParent("$1")
+                                + """
+                                const handle = await dir.getDirectoryHandle(leafName, $1);
+                                """
+                                + REGISTER_SINGLE_HANDLE),
+                        path,
+                        options)
+                .toCompletableFuture(new TypeReference<HandleInfo>() {})
+                .thenApply(info -> new FileSystemDirectoryHandle(info.id(), info.name(), this)));
+    }
+
+    // dir and leafName provided by opfsNavigateToParent()
+    CompletableFuture<FileData> opfsReadFile(String path) {
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                opfsNavigateToParent("{}")
+                                        + """
+                                const h = await dir.getFileHandle(leafName);
+                                const file = await h.getFile();
+                                const buf = await file.arrayBuffer();
+                                const bytes = new Uint8Array(buf);
+                                let binary = '';
+                                for (let i = 0; i < bytes.length; i++) {
+                                    binary += String.fromCharCode(bytes[i]);
+                                }
+                                return {name: file.name, size: file.size, type: file.type,
+                                    lastModified: file.lastModified, content: btoa(binary)};"""),
+                        path)
+                .toCompletableFuture(JsonNode.class)
+                .thenApply(node -> new FileData(
+                        node.path("name").asString(),
+                        node.path("size").longValue(),
+                        node.path("type").asString(),
+                        node.path("lastModified").longValue(),
+                        Base64.getDecoder().decode(node.path("content").asString()))));
+    }
+
+    // dir and leafName provided by opfsNavigateToParent()
+    CompletableFuture<Void> opfsWriteText(String path, String text) {
+        return executeVoidJs(
+                JS_TRY_CATCH.formatted(
+                        opfsNavigateToParent("{create:true}")
+                                + """
+                        const h = await dir.getFileHandle(leafName, {create:true});
+                        const w = await h.createWritable();
+                        await w.write($1);
+                        await w.close();"""),
+                path,
+                text);
+    }
+
+    // dir and leafName provided by opfsNavigateToParent()
+    CompletableFuture<Void> opfsWriteBytes(String path, byte[] data) {
+        String base64 = Base64.getEncoder().encodeToString(data);
+        return executeVoidJs(
+                JS_TRY_CATCH.formatted(
+                        opfsNavigateToParent("{create:true}")
+                                + """
+                        const h = await dir.getFileHandle(leafName, {create:true});
+                        const w = await h.createWritable();
+                        const binary = atob($1);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) {
+                            bytes[i] = binary.charCodeAt(i);
+                        }
+                        await w.write(bytes);
+                        await w.close();"""),
+                path,
+                base64);
+    }
+
+    // dir provided by opfsNavigateSegments()
+    CompletableFuture<List<FileSystemHandle>> opfsEntries(String path) {
+        return mapErrors(executeJs(
+                        JS_TRY_CATCH.formatted(
+                                opfsNavigateSegments("{}", false)
+                                        + """
+                                const result = [];
+                                for await (const [name, handle] of dir.entries()) {
+                                    const id = String(this.__fsApiNextId++);
+                                    this.__fsApiHandles.set(id, handle);
+                                    result.push({id: id, name: handle.name, kind: handle.kind});
+                                }
+                                return result;"""),
+                        path)
+                .toCompletableFuture(new TypeReference<List<HandleInfo>>() {})
+                .thenApply(infos -> infos.stream()
+                        .map(info -> {
+                            if ("directory".equals(info.kind())) {
+                                return (FileSystemHandle) new FileSystemDirectoryHandle(info.id(), info.name(), this);
+                            }
+                            return (FileSystemHandle) new FileSystemFileHandle(info.id(), info.name(), this);
+                        })
+                        .toList()));
+    }
+
+    // dir and leafName provided by opfsNavigateToParent()
+    CompletableFuture<Void> opfsRemoveEntry(String path, RemoveEntryOptions options) {
+        return executeVoidJs(
+                JS_TRY_CATCH.formatted(opfsNavigateToParent("{}")
+                        + """
+                        await dir.removeEntry(leafName, $1);"""),
+                path,
+                options);
+    }
+
+    CompletableFuture<Void> opfsClear() {
+        return executeVoidJs(
+                JS_TRY_CATCH.formatted(
+                        """
+                const root = await navigator.storage.getDirectory();
+                for await (const [name] of root.entries()) {
+                    await root.removeEntry(name, {recursive: true});
+                }"""));
+    }
+
     CompletableFuture<FileSystemDirectoryHandle> showDirectoryPicker(DirectoryPickerOptions options) {
         return mapErrors(executeJs(
                         JS_TRY_CATCH.formatted(RESOLVE_START_IN
@@ -341,11 +518,11 @@ class JsBridge implements Serializable {
                         handleId)
                 .toCompletableFuture(JsonNode.class)
                 .thenApply(node -> new FileData(
-                        node.path("name").textValue(),
+                        node.path("name").asString(),
                         node.path("size").longValue(),
-                        node.path("type").textValue(),
+                        node.path("type").asString(),
                         node.path("lastModified").longValue(),
-                        Base64.getDecoder().decode(node.path("content").textValue()))));
+                        Base64.getDecoder().decode(node.path("content").asString()))));
     }
 
     CompletableFuture<FileSystemWritableFileStream> createWritable(String handleId, WritableOptions options) {

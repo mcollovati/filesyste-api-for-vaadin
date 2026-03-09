@@ -28,9 +28,10 @@ The add-on mirrors the browser's
 [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API)
 as a server-side Java API. Key concepts:
 
-- **`FileSystemAPI`** — the entry point, bound to a Vaadin `Component`. All
-  operations execute JavaScript in the browser and return results as
-  `CompletableFuture`s.
+- **`FileSystemAPI`** — the entry point for picker-based operations, bound to a
+  Vaadin `Component`. All operations return `CompletableFuture`s.
+- **`OriginPrivateFileSystem`** — the entry point for OPFS operations, with
+  path-based convenience methods and automatic directory creation.
 - **Handles** — `FileSystemFileHandle` and `FileSystemDirectoryHandle` represent
   references to browser-side file system entries. They are kept in a client-side
   registry and referenced by opaque IDs on the server.
@@ -277,24 +278,73 @@ dir.resolve(childHandle).thenAccept(path -> {
 
 OPFS is a sandboxed filesystem private to the page's origin. Unlike picker
 methods, it does not show dialogs and does not require user gestures. It has
-broader browser support than the picker APIs.
+broader browser support than the picker APIs (Firefox and Safari support OPFS
+but not the picker API).
+
+Use `OriginPrivateFileSystem` for path-based convenience:
 
 ```java
-var fs = new FileSystemAPI(this);
+var opfs = new OriginPrivateFileSystem(this);
 
-fs.getOriginPrivateDirectory().thenCompose(root -> {
-    // Create a file in OPFS
-    var create = GetHandleOptions.builder().create(true).build();
-    return root.getFileHandle("app-data.json", create);
-}).thenCompose(file ->
-    file.writeString("{\"setting\": true}")
-);
+// Write a file — intermediate directories are created automatically
+opfs.writeFile("data/config.json", "{\"setting\": true}");
+
+// Read it back
+opfs.readFile("data/config.json").thenAccept(data ->
+    log(new String(data.getContent())));
+
+// List root entries
+opfs.list().thenAccept(entries ->
+    entries.forEach(e -> log(e.getName() + " (" + e.getKind() + ")")));
+
+// List a subdirectory
+opfs.list("data").thenAccept(entries -> { ... });
+
+// Remove a single file
+opfs.removeEntry("data/config.json");
+
+// Remove a directory recursively
+opfs.removeEntry("data", RemoveEntryOptions.recursively());
+
+// Clear everything
+opfs.clear();
+```
+
+For streaming large files to/from OPFS:
+
+```java
+// Upload: OPFS file -> server
+opfs.uploadFile("large.bin", UploadHandler.inMemory((meta, data) -> { ... }));
+
+// Download: server -> OPFS file
+opfs.downloadFile("large.bin", DownloadHandler.forFixedContent(
+    "large.bin", bytes, "application/octet-stream"));
+```
+
+For low-level handle operations (writable streams, permissions), get a handle
+first and then operate on it directly:
+
+```java
+opfs.getFileHandle("notes.txt", GetHandleOptions.creating())
+    .thenCompose(file -> file.createWritable()
+        .thenCompose(w -> w.write("Hello").thenCompose(v -> w.close())));
 ```
 
 OPFS is useful for:
 - Application storage without user prompts
 - Caching downloaded content
 - Integration tests (no native dialogs needed)
+
+### Choosing between `FileSystemAPI` and `OriginPrivateFileSystem`
+
+| | `FileSystemAPI` | `OriginPrivateFileSystem` |
+|---|---|---|
+| **Use when** | User picks files/directories via native OS dialogs | Programmatic app-managed storage without user prompts |
+| **Browser support** | Chromium only (Chrome, Edge, Opera) | Broader (Firefox, Safari, Chromium) |
+| **User interaction** | Required (picker dialogs) | None |
+| **Storage** | User's real file system | Sandboxed, origin-private |
+| **Path navigation** | Handle-by-handle chaining | Path-based convenience (`"a/b/file.txt"`) |
+| **Auto-create dirs** | No | Yes (for write operations) |
 
 ---
 
@@ -437,8 +487,9 @@ fs.openFile(
 
 | Class | Description |
 |-------|-------------|
-| `FileSystemAPI` | Future-based API, bound to a `Component` |
+| `FileSystemAPI` | Future-based picker API, bound to a `Component` |
 | `FileSystemCallbackAPI` | Callback-based wrapper around `FileSystemAPI` |
+| `OriginPrivateFileSystem` | Path-based OPFS API, bound to a `Component` |
 
 ### Handle Types
 

@@ -339,6 +339,85 @@ class FakeJsBridge extends JsBridge {
         return CompletableFuture.completedFuture(null);
     }
 
+    // -- OPFS single-roundtrip overrides --
+
+    @Override
+    CompletableFuture<FileSystemFileHandle> opfsGetFileHandle(String path, GetHandleOptions options) {
+        return navigateToParent(path, options.create())
+                .thenCompose(dirId -> getFileHandle(dirId, leafName(path), options));
+    }
+
+    @Override
+    CompletableFuture<FileSystemDirectoryHandle> opfsGetDirectoryHandle(String path, GetHandleOptions options) {
+        return navigateToParent(path, options.create())
+                .thenCompose(dirId -> getDirectoryHandle(dirId, leafName(path), options));
+    }
+
+    @Override
+    CompletableFuture<FileData> opfsReadFile(String path) {
+        return opfsGetFileHandle(path, GetHandleOptions.builder().build()).thenCompose(FileSystemFileHandle::getFile);
+    }
+
+    @Override
+    CompletableFuture<Void> opfsWriteText(String path, String text) {
+        return opfsGetFileHandle(path, GetHandleOptions.creating())
+                .thenCompose(file -> file.createWritable())
+                .thenCompose(writable -> writable.write(text).thenCompose(v -> writable.close()));
+    }
+
+    @Override
+    CompletableFuture<Void> opfsWriteBytes(String path, byte[] data) {
+        return opfsGetFileHandle(path, GetHandleOptions.creating())
+                .thenCompose(file -> file.createWritable())
+                .thenCompose(writable -> writable.write(data).thenCompose(v -> writable.close()));
+    }
+
+    @Override
+    CompletableFuture<List<FileSystemHandle>> opfsEntries(String path) {
+        if (path == null || path.isEmpty()) {
+            return getOriginPrivateDirectory().thenCompose(FileSystemDirectoryHandle::entries);
+        }
+        return opfsGetDirectoryHandle(path, GetHandleOptions.builder().build())
+                .thenCompose(FileSystemDirectoryHandle::entries);
+    }
+
+    @Override
+    CompletableFuture<Void> opfsRemoveEntry(String path, RemoveEntryOptions options) {
+        return navigateToParent(path, false).thenCompose(dirId -> removeEntry(dirId, leafName(path), options));
+    }
+
+    @Override
+    CompletableFuture<Void> opfsClear() {
+        return getOriginPrivateDirectory().thenCompose(root -> root.entries().thenCompose(list -> {
+            CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
+            for (FileSystemHandle entry : list) {
+                chain = chain.thenCompose(v -> root.removeEntry(entry.getName(), RemoveEntryOptions.recursively()));
+            }
+            return chain;
+        }));
+    }
+
+    private CompletableFuture<String> navigateToParent(String path, boolean create) {
+        String[] segments = path.split("/");
+        GetHandleOptions dirOptions = create
+                ? GetHandleOptions.creating()
+                : GetHandleOptions.builder().build();
+        return getOriginPrivateDirectory().thenCompose(root -> {
+            CompletableFuture<String> current = CompletableFuture.completedFuture(root.handleId());
+            for (int i = 0; i < segments.length - 1; i++) {
+                final String segment = segments[i];
+                current = current.thenCompose(
+                        dirId -> getDirectoryHandle(dirId, segment, dirOptions).thenApply(d -> d.handleId()));
+            }
+            return current;
+        });
+    }
+
+    private static String leafName(String path) {
+        int idx = path.lastIndexOf('/');
+        return idx >= 0 ? path.substring(idx + 1) : path;
+    }
+
     @Override
     void releaseHandle(String handleId) {
         fs.removeHandle(handleId);
