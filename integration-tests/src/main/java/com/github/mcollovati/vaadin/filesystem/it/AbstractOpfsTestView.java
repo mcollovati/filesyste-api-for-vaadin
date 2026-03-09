@@ -15,23 +15,19 @@
  */
 package com.github.mcollovati.vaadin.filesystem.it;
 
-import com.github.mcollovati.vaadin.filesystem.FileSystemAPI;
-import com.github.mcollovati.vaadin.filesystem.FileSystemDirectoryHandle;
-import com.github.mcollovati.vaadin.filesystem.FileSystemHandle;
-import com.github.mcollovati.vaadin.filesystem.RemoveEntryOptions;
+import com.github.mcollovati.vaadin.filesystem.OriginPrivateFileSystem;
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.html.Pre;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 abstract class AbstractOpfsTestView extends VerticalLayout {
 
-    private final FileSystemAPI fs;
+    private final OriginPrivateFileSystem opfs;
     private final Pre log;
 
     AbstractOpfsTestView() {
-        fs = new FileSystemAPI(this);
+        opfs = new OriginPrivateFileSystem(this);
         log = new Pre();
         log.setId("log");
         log.setWidthFull();
@@ -39,25 +35,11 @@ abstract class AbstractOpfsTestView extends VerticalLayout {
         add(log);
     }
 
-    FileSystemAPI fs() {
-        return fs;
+    OriginPrivateFileSystem opfs() {
+        return opfs;
     }
 
     abstract void addActions();
-
-    CompletableFuture<FileSystemDirectoryHandle> getOpfsRoot() {
-        return fs.getOriginPrivateDirectory();
-    }
-
-    CompletableFuture<Void> cleanupOpfs(FileSystemDirectoryHandle root) {
-        return root.entries().thenCompose(entries -> {
-            CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
-            for (FileSystemHandle entry : entries) {
-                chain = chain.thenCompose(v -> root.removeEntry(entry.getName(), RemoveEntryOptions.recursively()));
-            }
-            return chain;
-        });
-    }
 
     void appendLog(String message) {
         getUI().ifPresent(ui -> ui.access(() -> {

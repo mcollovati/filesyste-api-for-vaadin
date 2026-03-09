@@ -32,12 +32,11 @@ public class OpfsWritableStreamTestView extends AbstractOpfsTestView {
     }
 
     private void onWriteViaStream() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("stream.txt", GetHandleOptions.creating()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("stream.txt", GetHandleOptions.creating()))
                 .thenCompose(file -> file.createWritable()
-                        .thenCompose(w -> w.write("Hello Stream").thenCompose(v -> w.close()))
-                        .thenCompose(v -> file.getFile()))
+                        .thenCompose(w -> w.write("Hello Stream").thenCompose(v2 -> w.close()))
+                        .thenCompose(v2 -> file.getFile()))
                 .thenAccept(data -> {
                     String content = new String(data.getContent(), StandardCharsets.UTF_8);
                     appendLog("content=" + content);
@@ -46,15 +45,14 @@ public class OpfsWritableStreamTestView extends AbstractOpfsTestView {
     }
 
     private void onSeekAndWrite() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("seek.txt", GetHandleOptions.creating()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("seek.txt", GetHandleOptions.creating()))
                 .thenCompose(file -> file.createWritable()
                         .thenCompose(w -> w.write("AAABBB")
-                                .thenCompose(v -> w.seek(3))
-                                .thenCompose(v -> w.write("CCC"))
-                                .thenCompose(v -> w.close()))
-                        .thenCompose(v -> file.getFile()))
+                                .thenCompose(v2 -> w.seek(3))
+                                .thenCompose(v2 -> w.write("CCC"))
+                                .thenCompose(v2 -> w.close()))
+                        .thenCompose(v2 -> file.getFile()))
                 .thenAccept(data -> {
                     String content = new String(data.getContent(), StandardCharsets.UTF_8);
                     appendLog("content=" + content);
@@ -63,14 +61,13 @@ public class OpfsWritableStreamTestView extends AbstractOpfsTestView {
     }
 
     private void onTruncate() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("trunc.txt", GetHandleOptions.creating()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("trunc.txt", GetHandleOptions.creating()))
                 .thenCompose(file -> file.createWritable()
                         .thenCompose(w -> w.write("Hello World")
-                                .thenCompose(v -> w.truncate(5))
-                                .thenCompose(v -> w.close()))
-                        .thenCompose(v -> file.getFile()))
+                                .thenCompose(v2 -> w.truncate(5))
+                                .thenCompose(v2 -> w.close()))
+                        .thenCompose(v2 -> file.getFile()))
                 .thenAccept(data -> {
                     String content = new String(data.getContent(), StandardCharsets.UTF_8);
                     appendLog("content=" + content);
@@ -80,14 +77,13 @@ public class OpfsWritableStreamTestView extends AbstractOpfsTestView {
     }
 
     private void onKeepExistingData() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("keep.txt", GetHandleOptions.creating()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("keep.txt", GetHandleOptions.creating()))
                 .thenCompose(file -> file.writeString("Original")
-                        .thenCompose(v -> file.createWritable(WritableOptions.keepingExistingData()))
+                        .thenCompose(v2 -> file.createWritable(WritableOptions.keepingExistingData()))
                         .thenCompose(w ->
-                                w.seek(0).thenCompose(v -> w.write("Modified")).thenCompose(v -> w.close()))
-                        .thenCompose(v -> file.getFile()))
+                                w.seek(0).thenCompose(v2 -> w.write("Modified")).thenCompose(v2 -> w.close()))
+                        .thenCompose(v2 -> file.getFile()))
                 .thenAccept(data -> {
                     String content = new String(data.getContent(), StandardCharsets.UTF_8);
                     appendLog("content=" + content);

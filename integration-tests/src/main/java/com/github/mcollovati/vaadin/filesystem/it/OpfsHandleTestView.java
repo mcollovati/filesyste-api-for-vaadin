@@ -30,27 +30,24 @@ public class OpfsHandleTestView extends AbstractOpfsTestView {
     }
 
     private void onIsSameEntry() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("same.txt", GetHandleOptions.creating())
-                        .thenCompose(f1 -> root.getFileHandle("same.txt").thenCompose(f2 -> f1.isSameEntry(f2))))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("same.txt", GetHandleOptions.creating()))
+                .thenCompose(f1 -> opfs().getFileHandle("same.txt").thenCompose(f1::isSameEntry))
                 .thenAccept(same -> appendLog("same=" + same))
                 .exceptionally(this::logError);
     }
 
     private void onQueryPermission() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("perm.txt", GetHandleOptions.creating()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("perm.txt", GetHandleOptions.creating()))
                 .thenCompose(file -> file.queryPermission(PermissionMode.READ))
                 .thenAccept(state -> appendLog("permission=" + state))
                 .exceptionally(this::logError);
     }
 
     private void onRequestPermission() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("perm.txt", GetHandleOptions.creating()))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("perm.txt", GetHandleOptions.creating()))
                 .thenCompose(file -> file.requestPermission(PermissionMode.READWRITE))
                 .thenAccept(state -> appendLog("permission=" + state))
                 .exceptionally(this::logError);

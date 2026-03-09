@@ -15,8 +15,6 @@
  */
 package com.github.mcollovati.vaadin.filesystem.it;
 
-import com.github.mcollovati.vaadin.filesystem.FileSystemFileHandle;
-import com.github.mcollovati.vaadin.filesystem.GetHandleOptions;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
@@ -34,17 +32,15 @@ public class OpfsStreamingTestView extends AbstractOpfsTestView {
     }
 
     private void onUpload() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("upload.txt", GetHandleOptions.creating()))
-                .thenCompose(file -> file.writeString("upload content").thenApply(v -> file))
-                .thenCompose(file -> {
+        opfs().clear()
+                .thenCompose(v -> opfs().writeFile("upload.txt", "upload content"))
+                .thenCompose(v -> {
                     UploadHandler handler = UploadHandler.inMemory((metadata, bytes) -> {
                         String received = new String(bytes, StandardCharsets.UTF_8);
                         appendLog("uploaded=" + received);
                         appendLog("fileName=" + metadata.fileName());
                     });
-                    return file.uploadTo(handler);
+                    return opfs().uploadFile("upload.txt", handler);
                 })
                 .thenRun(() -> appendLog("upload-complete"))
                 .exceptionally(this::logError);
@@ -52,15 +48,13 @@ public class OpfsStreamingTestView extends AbstractOpfsTestView {
 
     private void onDownload() {
         byte[] content = "downloaded content".getBytes(StandardCharsets.UTF_8);
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("download.txt", GetHandleOptions.creating()))
-                .thenCompose(file -> {
+        opfs().clear()
+                .thenCompose(v -> {
                     DownloadHandler handler = DownloadHandler.fromInputStream(event -> new DownloadResponse(
                             new ByteArrayInputStream(content), "download.txt", "text/plain", content.length));
-                    return file.downloadFrom(handler).thenApply(v -> file);
+                    return opfs().downloadFile("download.txt", handler);
                 })
-                .thenCompose(FileSystemFileHandle::getFile)
+                .thenCompose(v -> opfs().readFile("download.txt"))
                 .thenAccept(data -> {
                     String received = new String(data.getContent(), StandardCharsets.UTF_8);
                     appendLog("downloaded=" + received);

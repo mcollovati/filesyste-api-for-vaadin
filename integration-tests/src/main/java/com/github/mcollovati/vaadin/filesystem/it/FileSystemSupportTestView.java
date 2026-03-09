@@ -15,19 +15,41 @@
  */
 package com.github.mcollovati.vaadin.filesystem.it;
 
+import com.github.mcollovati.vaadin.filesystem.FileSystemAPI;
+import com.vaadin.flow.component.html.NativeButton;
+import com.vaadin.flow.component.html.Pre;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
 @Route("test/support")
-public class FileSystemSupportTestView extends AbstractOpfsTestView {
+public class FileSystemSupportTestView extends VerticalLayout {
 
-    @Override
-    void addActions() {
-        add(button("check-support", "Check Support", this::onCheckSupport));
+    private final FileSystemAPI fs;
+    private final Pre log;
+
+    public FileSystemSupportTestView() {
+        fs = new FileSystemAPI(this);
+        log = new Pre();
+        log.setId("log");
+        log.setWidthFull();
+        var btn = new NativeButton("Check Support", e -> onCheckSupport());
+        btn.setId("check-support");
+        add(btn, log);
     }
 
     private void onCheckSupport() {
-        fs().isSupported()
+        fs.isSupported()
                 .thenAccept(supported -> appendLog("supported=" + supported))
-                .exceptionally(this::logError);
+                .exceptionally(error -> {
+                    appendLog("Error: " + error.getMessage());
+                    return null;
+                });
+    }
+
+    private void appendLog(String message) {
+        getUI().ifPresent(ui -> ui.access(() -> {
+            String current = log.getText();
+            log.setText(current + message + "\n");
+        }));
     }
 }

@@ -28,18 +28,16 @@ public class OpfsErrorTestView extends AbstractOpfsTestView {
     }
 
     private void onNotFoundError() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getFileHandle("nonexistent.txt"))
+        opfs().clear()
+                .thenCompose(v -> opfs().getFileHandle("nonexistent.txt"))
                 .thenAccept(ignore -> {})
                 .exceptionally(this::logError);
     }
 
     private void onTypeMismatchError() {
-        getOpfsRoot()
-                .thenCompose(root -> cleanupOpfs(root).thenApply(v -> root))
-                .thenCompose(root -> root.getDirectoryHandle("mismatch", GetHandleOptions.creating())
-                        .thenCompose(dir -> root.getFileHandle("mismatch")))
+        opfs().clear()
+                .thenCompose(v -> opfs().getDirectoryHandle("mismatch", GetHandleOptions.creating()))
+                .thenCompose(dir -> opfs().getFileHandle("mismatch"))
                 .thenAccept(ignore -> {})
                 .exceptionally(this::logError);
     }

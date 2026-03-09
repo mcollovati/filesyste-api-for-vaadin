@@ -12,7 +12,7 @@ A public demo is available at https://filesystem-api-for-vaadin.up.railway.app/.
 - **File pickers** — open, save, and directory picker dialogs from server-side Java
 - **Read and write files** — transfer file content between browser and server
 - **Directory traversal** — list entries, create/remove files and subdirectories
-- **Origin Private File System (OPFS)** — sandboxed storage without user prompts
+- **Origin Private File System (OPFS)** — sandboxed storage without user prompts via `OriginPrivateFileSystem`
 - **Streaming transfers** — efficient large-file upload/download via Vaadin's
   `UploadHandler` and `DownloadHandler`
 - **Two API styles** — `CompletableFuture`-based and callback-based
@@ -101,6 +101,30 @@ var fs = new FileSystemCallbackAPI(this);
 fs.openFile(
     fileData -> Notification.show("Read: " + fileData.getName()),
     error -> Notification.show("Error: " + error.getMessage()));
+```
+
+### Origin Private File System (OPFS)
+
+For programmatic storage without user prompts, use `OriginPrivateFileSystem`.
+It provides path-based convenience methods and creates intermediate directories
+automatically:
+
+```java
+var opfs = new OriginPrivateFileSystem(this);
+
+// Write a file (creates intermediate dirs)
+opfs.writeFile("data/config.json", "{\"key\": true}");
+
+// Read it back
+opfs.readFile("data/config.json").thenAccept(data ->
+    Notification.show(new String(data.getContent())));
+
+// List root entries
+opfs.list().thenAccept(entries ->
+    entries.forEach(e -> System.out.println(e.getName())));
+
+// Clean up
+opfs.clear();
 ```
 
 ### Streaming large files
