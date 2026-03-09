@@ -9,13 +9,11 @@ COPY filesystem-api-browserless/pom.xml filesystem-api-browserless/pom.xml
 COPY demo/pom.xml demo/pom.xml
 
 # Download dependencies (cached layer)
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn dependency:go-offline -ntp -B -q || true
+RUN mvn dependency:go-offline -ntp -B -q || true
 
 COPY . .
 
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn package -Pdemo -DskipTests -pl demo -am -ntp -B
+RUN mvn package -Pdemo -DskipTests -pl demo -am -ntp -B
 
 # ── Runtime stage ────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre
