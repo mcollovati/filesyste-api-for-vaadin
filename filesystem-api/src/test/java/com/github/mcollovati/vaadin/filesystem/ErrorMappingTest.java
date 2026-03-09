@@ -62,6 +62,13 @@ class ErrorMappingTest {
     }
 
     @Test
+    void mapsTypeError() {
+        var ex = JsBridge.mapException(new RuntimeException("TypeError: window.showOpenFilePicker is not a function"));
+        assertInstanceOf(FileSystemApiNotSupportedException.class, ex);
+        assertEquals("window.showOpenFilePicker is not a function", ex.getMessage());
+    }
+
+    @Test
     void unknownErrorMapsToBaseException() {
         var original = new RuntimeException("SomeOtherError: something went wrong");
         var ex = JsBridge.mapException(original);

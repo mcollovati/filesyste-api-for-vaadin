@@ -116,7 +116,8 @@ class JsBridge implements Serializable {
             "NotAllowedError", FileSystemNotAllowedException::new,
             "AbortError", FileSystemNotAllowedException::new,
             "TypeMismatchError", FileSystemTypeMismatchException::new,
-            "SecurityError", FileSystemNotAllowedException::new);
+            "SecurityError", FileSystemNotAllowedException::new,
+            "TypeError", FileSystemApiNotSupportedException::new);
 
     private final Component component;
     boolean initialized;
