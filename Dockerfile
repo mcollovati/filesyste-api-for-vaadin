@@ -7,9 +7,10 @@ COPY pom.xml .
 COPY filesystem-api/pom.xml filesystem-api/pom.xml
 COPY filesystem-api-browserless/pom.xml filesystem-api-browserless/pom.xml
 COPY demo/pom.xml demo/pom.xml
+COPY integration-tests/pom.xml integration-tests/pom.xml
 
 # Download dependencies (cached layer)
-RUN mvn dependency:go-offline -ntp -B -q || true
+RUN mvn dependency:go-offline -Pdemo -ntp -B -q
 
 COPY . .
 
